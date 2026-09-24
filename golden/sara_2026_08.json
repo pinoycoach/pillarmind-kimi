@@ -7,21 +7,63 @@
     "city": "Davao City",
     "sex": "female",
     "as_of": "2026-08-15 12:00",
-    "layers": ["decade", "annual", "monthly"]
+    "layers": [
+      "decade",
+      "annual",
+      "monthly"
+    ]
   },
   "expected": {
     "pillars": {
       "natal.year": "戊午",
       "natal.month": "丁巳",
       "natal.day": "癸巳",
-      "monthly": "丙申"
+      "monthly": "丙申",
+      "decade": "癸丑"
     },
-    "absent_pillars": ["natal.hour"],
-    "void": {"pair": ["午", "未"]},
+    "absent_pillars": [
+      "natal.hour"
+    ],
+    "void": {
+      "pair": [
+        "午",
+        "未"
+      ]
+    },
     "branch_combinations": {
       "六合 巳申 [natal.month+monthly]": {
-        "gate": {"token": "ESCALATED", "pending_includes": ["E-5"]}
+        "gate": {
+          "token": "ESCALATED",
+          "pending_includes": [
+            "E-5"
+          ]
+        }
+      }
+    },
+    "harms": {
+      "害 丑午": {
+        "outcome": {
+          "token": "ESCALATED",
+          "pending": "E-23-scope"
+        }
+      }
+    },
+    "stem_combinations": {
+      "五合 戊癸": {
+        "status": {
+          "token": "ESCALATED",
+          "pending": "E-21"
+        }
+      },
+      "五合 丙辛": {
+        "status": "NOT_FIRING"
+      }
+    },
+    "punishments": {
+      "自刑 午午": {
+        "outcome": "FULL_FORCE"
       }
     }
-  }
+  },
+  "_approved": "Decade-layer entries approved by the operator 24 Sep 2026 (DECISIONS N33): pillars.decade 癸丑; 害 丑午 ESCALATED E-23-scope; 五合 戊癸 ESCALATED E-21; 五合 丙辛 NOT_FIRING; 自刑 午午 FULL_FORCE."
 }
