@@ -1,0 +1,49 @@
+{
+  "_source": "Bench hand derivation: stack/v10_0_1e_1_handover.md Part One (items 1-9), v10_0_1e_2_addendum_A.md §B1, v10_0_1e_3_addendum_B.md §C2/§C5. The 午未 lock and its three eliminations follow the operator's 23 Sep rulings N1 = LOCKED_FULL and N2 = capture allowed (DECISIONS.md); under those rulings the ratified map stands as written. The 丙/丙/辛 contest stays escalated on E-21.",
+  "_status": "Birth data supplied by the operator 23 Sep 2026. The stack had recorded these pillars as operator-asserted (0.1e handover line 7); this file makes them engine-verified.",
+  "input": {
+    "birth": "1945-03-28 02:20",
+    "city": "Maasin",
+    "sex": "male",
+    "as_of": "2026-06-15 12:00",
+    "layers": ["decade", "annual"]
+  },
+  "expected": {
+    "pillars": {
+      "natal.year": "乙酉",
+      "natal.month": "己卯",
+      "natal.day": "丙申",
+      "natal.hour": "己丑",
+      "decade": "辛未",
+      "annual": "丙午"
+    },
+    "hidden_stems": {
+      "natal.year": ["辛"],
+      "natal.month": ["乙"],
+      "natal.day": ["庚", "壬", "戊"],
+      "natal.hour": ["己", "癸", "辛"],
+      "decade": ["己", "丁", "乙"],
+      "annual": ["丁", "己"]
+    },
+    "input_integrity": {
+      "corroboration": {
+        "five_tiger": {"pass": true},
+        "five_rat": {"pass": true}
+      }
+    },
+    "void": {"xun": "甲午旬", "pair": ["辰", "巳"]},
+    "branch_combinations": {
+      "六合 午未 [annual+decade]": {"gate": "NOT_MET", "lock": "LOCKED_FULL"}
+    },
+    "branch_tokens": {"natal.day": "FREE"},
+    "clashes": {
+      "沖 卯酉": {"outcome": "FULL_FORCE"},
+      "沖 丑未": {"outcome": "ELIMINATED"}
+    },
+    "harms": {"害 丑午": {"outcome": "ELIMINATED"}},
+    "destructions": {"破 午卯": {"outcome": "ELIMINATED"}},
+    "stem_combinations": {
+      "五合 丙辛": {"status": {"token": "ESCALATED", "pending": "E-21"}}
+    }
+  }
+}

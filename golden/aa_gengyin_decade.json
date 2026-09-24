@@ -1,0 +1,21 @@
+{
+  "_source": "stack/v10_0_1f_addendum_A.md §A3 (AA): the 庚寅 decade supplies the second 寅; both pairs clash (一沖而得兩沖) for ages 54-63 only.",
+  "_status": "Birth datetime, city and sex not supplied (DECISIONS N15). as_of must fall inside the 庚寅 decade. Decade layer only: an annual layer would add its own branch to the pool.",
+  "input": {
+    "birth": null,
+    "city": null,
+    "sex": null,
+    "as_of": null,
+    "layers": ["decade"]
+  },
+  "expected": {
+    "pillars": {
+      "natal.year": "庚戌",
+      "natal.month": "甲申",
+      "natal.day": "甲申",
+      "natal.hour": "丙寅",
+      "decade": "庚寅"
+    },
+    "clashes": {"沖 寅申": {"outcome": "FULL_FORCE"}}
+  }
+}

@@ -1,0 +1,15 @@
+# Environment and caches
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Kimi audit run outputs
+*_result*.md
+
+# Personal chart outputs
+nap_*.json
+dennis_*.json
+resolved_field_map.json
+
+# Real birth data for golden cases, local only
+golden_local/

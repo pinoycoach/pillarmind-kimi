@@ -1,0 +1,20 @@
+{
+  "_source": "stack/v10_0_1f_addendum_A.md §A3 (AA): under ch. 25, two 申 do not clash a single 寅, so the natal clash does not fire. E-23 adopted on located 原文 for 沖 and 子卯刑 (DECISIONS N22).",
+  "_status": "Birth datetime, city and sex not supplied (DECISIONS N15).",
+  "input": {
+    "birth": null,
+    "city": null,
+    "sex": null,
+    "as_of": null,
+    "layers": []
+  },
+  "expected": {
+    "pillars": {
+      "natal.year": "庚戌",
+      "natal.month": "甲申",
+      "natal.day": "甲申",
+      "natal.hour": "丙寅"
+    },
+    "clashes": {"沖 寅申": {"outcome": "NOT_FIRING"}}
+  }
+}
