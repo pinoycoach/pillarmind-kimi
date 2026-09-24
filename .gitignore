@@ -13,3 +13,6 @@ resolved_field_map.json
 
 # Real birth data for golden cases, local only
 golden_local/
+
+# Kimi boundary experiment raw output
+experiments/out/
