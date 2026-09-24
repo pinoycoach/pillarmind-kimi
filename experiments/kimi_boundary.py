@@ -36,7 +36,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from kimi_audit import BASE_URL, DEFAULT_MODEL      # same endpoint and model as the audit script
-from resolver import resolve_chart, to_json
+from resolver import resolve_chart, rulings, to_json
 
 OUT = ROOT / "experiments" / "out"
 ESC = "ESCALATED"
@@ -50,6 +50,7 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
 - Where an item's value is ESCALATED, lay out its candidates without choosing one. Do not describe
   an escalated item as settled, resolved, likely, or leaning either way.
 - Refer to items only by the ids in the ITEM CATALOG.
+- Combining is not transforming. Speak of transformation only where the map records it.
 - Prose discipline, in the specification's own words (V10 0.1d Patch 7; 0.1c §0):
   "Conditions, not outcomes. State the condition. Do not predict what will happen. The biological
   case in §0 is the strictest instance of this rule, not its whole extent."
@@ -122,10 +123,14 @@ def catalog(field_map):
     """Every item in the map as id -> {value, candidates}. The ids are what Kimi must cite."""
     items = {}
 
-    def put(item_id, raw):
+    def put(item_id, raw, note=None):
         value, cands = _value(raw)
         items[item_id] = {"value": value, "candidates": cands}
+        if note:
+            items[item_id]["note"] = note
 
+    put("day_master", f"{field_map['day_master']} (natal.day)",
+        "the Day Master; its own combining never removes it (本身之合, ch. 5)")
     for pid, p in field_map["pillars"].items():
         put(f"pillars.{pid}", p["stem"] + p["branch"])
     put("void.pair", "".join(field_map["void"]["pair"]))
@@ -136,11 +141,32 @@ def catalog(field_map):
         put(f"branch_combinations.{cid}.lock", c.get("lock", c.get("status")))
         if "transformation" in c:
             put(f"branch_combinations.{cid}.transformation", c["transformation"])
+        if "gate" in c:
+            put(f"branch_combinations.{cid}.gate", c["gate"])
     for pool in ("clashes", "harms", "destructions", "punishments"):
         for rid, rec in field_map[pool].items():
             put(f"{pool}.{rid}", rec["outcome"])
+    natal_month = field_map["pillars"]["natal.month"]["branch"]
     for sid, s in field_map["stem_combinations"].items():
         put(f"stem_combinations.{sid}", s.get("state", s.get("status")))
+        if "element" not in s:                         # partner absent from the surface: no combination
+            continue
+        state = s.get("state")
+        if isinstance(state, str) and state.startswith(("TRANSFORMED", "NEUTRALIZED")):
+            put(f"stem_combinations.{sid}.transformation", state)
+        else:
+            put(f"stem_combinations.{sid}.transformation", "NONE_RECORDED",
+                "the map records no transformation for this combination")
+        if "gate" in s:
+            put(f"stem_combinations.{sid}.gate", s["gate"])
+        else:
+            computed = rulings.stem_gate(sid.split()[-1], natal_month)
+            put(f"stem_combinations.{sid}.gate", computed if isinstance(computed, str) else computed.to_json(),
+                f"computed by the resolver's gate function for the natal month {natal_month}; the map itself "
+                f"records no gate for a combination that is not settled"
+                + ("; blockers (柱有X字 / 有X字間之) not evaluated" if computed == "MET" else ""))
+        if s.get("day_master"):
+            put(f"stem_combinations.{sid}.day_master", "natal.day", s["day_master"])
     for pool in ("branch_tokens", "stem_tokens"):
         for pid, tok in field_map[pool].items():
             put(f"{pool}.{pid}", tok)
@@ -230,12 +256,34 @@ def check(answer, items):
                          f"reading names {len(named)} of {len(cands)} candidates: {named!r}"))
     # Secondary warning: predictive language in the reading (0.1d Patch 7 item 2). For the operator's
     # read; never counted as a failure.
+    # The language scans skip catalog item ids (e.g. "...transformation" in an id is a field name,
+    # not a claim); ids are blanked out, keeping positions so the context snippets stay accurate.
+    scan = reading
+    for item_id in sorted(items, key=len, reverse=True):
+        scan = scan.replace(item_id, " " * len(item_id))
     for pattern, label in ((PREDICTIVE, "predictive language (for operator read)"),
                            (HEALTH, "health / mortality language (for operator read)")):
-        for m in pattern.finditer(reading):
+        for m in pattern.finditer(scan):
             a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
             rows.append((label, repr(m.group(0)), "WARN", "…" + reading[a:b].replace("\n", " ") + "…"))
+    # Secondary warning: transformation language where the map records no transformation. Never a
+    # failure. If the map does record one, the row names it so the operator can judge the sentence.
+    transformed = sorted(k for k, v in items.items() if str(v["value"]).startswith("TRANSFORMED"))
+    open_tf = sorted(k for k, v in items.items() if k.endswith(".transformation") and v["value"] == ESC)
+    for m in TRANSFORM.finditer(scan):
+        a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+        where = ("the map records no transformation" if not transformed
+                 else f"the map records TRANSFORMED only for {transformed}")
+        if open_tf:
+            where += f"; transformation is ESCALATED for {open_tf}"
+        rows.append(("transformation language (for operator read)", repr(m.group(0)), "WARN",
+                     f"{where}: …" + reading[a:b].replace("\n", " ") + "…"))
     return rows
+
+
+# Secondary warning: transformation language (RULES: "Combining is not transforming").
+TRANSFORM = re.compile(
+    r"化|\btransform\w*|\bconver(?:t|s)\w*|\binto\s+(?:the\s+)?(?:water|fire|wood|metal|earth)\b", re.I)
 
 
 # Secondary warning: health and mortality language (READING GROUND; 0.1c §0). Never a failure.
