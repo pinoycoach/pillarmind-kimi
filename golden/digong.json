@@ -6,7 +6,10 @@
     "city": "Maasin",
     "sex": "male",
     "as_of": "2026-06-15 12:00",
-    "layers": ["decade", "annual"]
+    "layers": [
+      "decade",
+      "annual"
+    ]
   },
   "expected": {
     "pillars": {
@@ -18,32 +21,91 @@
       "annual": "丙午"
     },
     "hidden_stems": {
-      "natal.year": ["辛"],
-      "natal.month": ["乙"],
-      "natal.day": ["庚", "壬", "戊"],
-      "natal.hour": ["己", "癸", "辛"],
-      "decade": ["己", "丁", "乙"],
-      "annual": ["丁", "己"]
+      "natal.year": [
+        "辛"
+      ],
+      "natal.month": [
+        "乙"
+      ],
+      "natal.day": [
+        "庚",
+        "壬",
+        "戊"
+      ],
+      "natal.hour": [
+        "己",
+        "癸",
+        "辛"
+      ],
+      "decade": [
+        "己",
+        "丁",
+        "乙"
+      ],
+      "annual": [
+        "丁",
+        "己"
+      ]
     },
     "input_integrity": {
       "corroboration": {
-        "five_tiger": {"pass": true},
-        "five_rat": {"pass": true}
+        "five_tiger": {
+          "pass": true
+        },
+        "five_rat": {
+          "pass": true
+        }
       }
     },
-    "void": {"xun": "甲午旬", "pair": ["辰", "巳"]},
+    "void": {
+      "xun": "甲午旬",
+      "pair": [
+        "辰",
+        "巳"
+      ]
+    },
     "branch_combinations": {
-      "六合 午未 [annual+decade]": {"gate": "NOT_MET", "lock": "LOCKED_FULL"}
+      "六合 午未 [annual+decade]": {
+        "gate": "NOT_MET",
+        "lock": "LOCKED_FULL"
+      }
     },
-    "branch_tokens": {"natal.day": "FREE"},
+    "branch_tokens": {
+      "natal.day": "FREE"
+    },
     "clashes": {
-      "沖 卯酉": {"outcome": "FULL_FORCE"},
-      "沖 丑未": {"outcome": "ELIMINATED"}
+      "沖 卯酉": {
+        "outcome": "FULL_FORCE"
+      },
+      "沖 丑未": {
+        "outcome": "ELIMINATED"
+      }
     },
-    "harms": {"害 丑午": {"outcome": "ELIMINATED"}},
-    "destructions": {"破 午卯": {"outcome": "ELIMINATED"}},
+    "harms": {
+      "害 丑午": {
+        "outcome": "ELIMINATED"
+      }
+    },
+    "destructions": {
+      "破 午卯": {
+        "outcome": "ELIMINATED"
+      }
+    },
     "stem_combinations": {
-      "五合 丙辛": {"status": {"token": "ESCALATED", "pending": "E-21"}, "gate": "NOT_MET"}
+      "五合 丙辛": {
+        "status": {
+          "token": "ESCALATED",
+          "pending": "E-21"
+        },
+        "gate": "NOT_MET"
+      }
+    },
+    "palaces": {
+      "natal.year": "祖",
+      "natal.month": "父母",
+      "natal.day": "妻",
+      "natal.hour": "子"
     }
-  }
+  },
+  "_palaces": "Palaces per the operator's ch. 23 ruling (N42): year 祖, month 父母, day 妻, hour 子."
 }

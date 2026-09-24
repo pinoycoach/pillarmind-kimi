@@ -45,7 +45,7 @@ PREAMBLE = """You are given a Resolved Field Map for one BaZi chart, produced by
 ITEM CATALOG listing every item in that map by id, with its value.
 """
 
-RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and escalation in the map is FIXED.
+RULES_CORE = """- Every pillar, token, lock, clash, harm, destruction, punishment and escalation in the map is FIXED.
   Do not recompute, re-derive, or correct anything, even if you believe the map is wrong.
 - Where an item's value is ESCALATED, lay out its candidates without choosing one. Do not describe
   an escalated item as settled, resolved, likely, or leaning either way.
@@ -53,6 +53,7 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
   not "pillars.decade". Ids belong only in cited_items, restated_values and escalations; use
   them there exactly as the ITEM CATALOG gives them.
 - Combining is not transforming. Speak of transformation only where the map records it.
+- Do not assign life-area meanings to pillars (such as career, public life, legacy, early or late life) unless the map records them. Palaces, where the map gives them, are only those of the ch. 23 ruling.
 - Prose discipline, in the specification's own words (V10 0.1d Patch 7; 0.1c §0):
   "Conditions, not outcomes. State the condition. Do not predict what will happen. The biological
   case in §0 is the strictest instance of this rule, not its whole extent."
@@ -65,17 +66,28 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
   "Vocabulary is structural. No luck, fate, destiny, fortune, auspicious, inauspicious."
   "Commercial reframing is blocked. A broken formation is broken. Do not soften a 破格 verdict, and
   do not present a structural constraint as an opportunity."
+"""
 
-READING GROUND (operator draft, test only — not N6)
+GROUND_HEAD = """READING GROUND (operator draft, test only — not N6)
 Terrain, not events. Describe conditions: pressure, support, contest, what is bound and what is free. Never predict events.
 The one walking the terrain has the final say. Same chart, not the same life. The reading shows the ground; the person's choices, effort, faith and grace decide what happens on it.
 Speak plainly where the map is settled. Where an item fires, locks or is eliminated, say what it means with conviction, not hedging. Where the map is escalated, present every candidate as equally open.
 No medical, legal or mental-health statements. The chart describes terrain; it is not a diagnosis, a legal opinion or therapy. Where a question touches these, say so plainly and point to a professional.
 Quiet is not empty. If nothing in the chart acts on an area, the chart is silent there, which never means little happens in the person's life.
 Don't go beyond what was asked.
-Public figures: civic layer only. Structure, never a portrait. Nothing about private life, health or fate.
-The best output is the standard. Not a fortune cookie.
 """
+# Ground rule 7, by mode (N43). Civic modes keep the public-figure limit; lab mode replaces it.
+RULE7_CIVIC = "Public figures: civic layer only. Structure, never a portrait. Nothing about private life, health or fate.\n"
+RULE7_LAB = ("Palaces are read as the figure's own terrain, never as statements about the relatives. No reading of "
+             "any relative's own chart (Patch 13). The no-harm rule applies in full, to the figure and to the operator.\n")
+GROUND_TAIL = "The best output is the standard. Not a fortune cookie.\n"
+
+CIVIC_MODES = ("boundary", "interpret")
+
+
+def rules(mode):
+    """Shared rules plus the READING GROUND, with ground rule 7 chosen by mode."""
+    return RULES_CORE + "\n" + GROUND_HEAD + (RULE7_LAB if mode == "lab" else RULE7_CIVIC) + GROUND_TAIL
 
 SCHEMA = """Return ONLY a JSON object with exactly these keys:
 {
@@ -90,7 +102,7 @@ copied character for character from the catalog, in any order, and no other item
 
 INSTRUCTIONS = {
     # The mode of run 20260924-222336 (N35).
-    "boundary": PREAMBLE + "\nYour task is to INTERPRET ONLY.\n" + RULES + "\n" + SCHEMA,
+    "boundary": PREAMBLE + "\nYour task is to INTERPRET ONLY.\n" + rules("boundary") + "\n" + SCHEMA,
     # TEST PROMPT, NOT N6. It exists to test the boundary under real interpretation; it is not the
     # interpretation prompt, which N6 has not decided.
     "interpret": PREAMBLE + """
@@ -105,16 +117,61 @@ This chart belongs to a LIVING PUBLIC FIGURE. Your task is a LAYER-3 READING of 
 - Read what items mean through the TEN GODS relative to the Day Master (the catalog gives each
   stem's and hidden stem's ten god): for example, what it means that the contested stem is the
   Day Master's 正財. All the rules below still apply.
-""" + RULES + "\n" + SCHEMA,
+""" + rules("interpret") + "\n" + SCHEMA,
+    # LAB MODE (N43). TEST PROMPT, NOT N6. Deceased historical figures only; living subjects refused.
+    "lab": PREAMBLE + """
+LAB MODE. This chart belongs to a DECEASED HISTORICAL FIGURE. Your task is a LAYER-3 READING of it
+for the period of the transit layers in the map.
+- For each item that FIRES (value FULL_FORCE), each item that is LOCKED (LOCKED_FULL), and each
+  item that is ELIMINATED, say what it means as terrain in that period.
+- For every ESCALATED item, give the reading under EACH candidate in turn, and say how the readings
+  differ. Treat the candidates as equally open. Do not choose between them, rank them, or say which
+  is more likely.
+- The map gives each natal pillar's palace (ch. 23 ruling: year 祖, month 父母, day 妻, hour 子).
+  Read palaces as the figure's own terrain only.
+- Read what items mean through the TEN GODS relative to the Day Master (the catalog gives each
+  stem's and hidden stem's ten god). All the rules below still apply.
+""" + rules("lab") + "\n" + SCHEMA,
 }
-PROMPT_LABEL = {"boundary": "boundary (interpret-only)", "interpret": "interpret — TEST PROMPT, NOT N6"}
+PROMPT_LABEL = {"boundary": "boundary (interpret-only; civic)", "interpret": "interpret — civic, TEST PROMPT, NOT N6",
+                "lab": "LAB — deceased historical figures only; TEST PROMPT, NOT N6; never published directly"}
+
+
+DEFAULT_CHART = ROOT / "golden" / "digong.json"
+
+
+def load_chart(path=DEFAULT_CHART):
+    """Resolver inputs from a chart file (a golden-format JSON), plus the file's contents."""
+    case = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    i = case["input"]
+    kwargs = dict(birth=dt.datetime.fromisoformat(i["birth"]), city=i["city"], sex=i["sex"],
+                  as_of=dt.datetime.fromisoformat(i["as_of"]), layers=tuple(i["layers"]),
+                  hour_known=i.get("hour_known", True))
+    return kwargs, case
 
 
 def load_digong_input():
-    case = json.loads((ROOT / "golden" / "digong.json").read_text(encoding="utf-8"))
-    i = case["input"]
-    return dict(birth=dt.datetime.fromisoformat(i["birth"]), city=i["city"], sex=i["sex"],
-                as_of=dt.datetime.fromisoformat(i["as_of"]), layers=tuple(i["layers"]))
+    return load_chart()[0]
+
+
+def lab_refusal(case):
+    """Lab mode is for deceased historical figures only (N43). A chart must declare it; anything else,
+    including a missing declaration, is refused until a later decision says otherwise."""
+    subject = case.get("subject") or {}
+    if subject.get("status") != "deceased":
+        return ("LAB MODE REFUSED: lab mode is for deceased historical figures only (DECISIONS N43). "
+                "This chart does not declare subject.status = \"deceased\"; living subjects are refused in "
+                "lab mode until a later decision says otherwise.")
+    return None
+
+
+def civic_view(field_map):
+    """The map as sent in civic modes: palaces removed (ground rule 7, public figures), everywhere."""
+    view = json.loads(json.dumps(field_map, ensure_ascii=False))
+    view.pop("palaces", None)
+    for p in view["pillars"].values():
+        p.pop("palace", None)
+    return view
 
 
 def _value(v):
@@ -143,6 +200,14 @@ def catalog(field_map):
         for h in p["hidden_stems"]:
             put(f"pillars.{pid}.hidden.{h['stem']}.ten_god", h["ten_god"],
                 f"ten god of hidden {h['stem']} in {p['branch']}, relative to the Day Master")
+    # Palaces (ch. 23 ruling, N42), only when the map carries them: lab mode. Civic views strip them.
+    for pid, pal in (field_map.get("palaces") or {}).items():
+        if pid == "rule":
+            continue
+        if isinstance(pal, dict) and pal.get("token") == "GAP":
+            put(f"palaces.{pid}", "GAP", pal.get("note"))
+        else:
+            put(f"palaces.{pid}", pal, "ch. 23 palace, read as the figure's own terrain")
     put("void.pair", "".join(field_map["void"]["pair"]))
     if field_map.get("decade") and isinstance(field_map["decade"].get("in_force"), dict) \
             and "pillar" in field_map["decade"]["in_force"]:
@@ -212,7 +277,7 @@ def _named(candidate, reading):
     return len(words & text) / len(words) >= 0.6
 
 
-def check(answer, items):
+def check(answer, items, mode="boundary"):
     rows = []                                          # (check, subject, PASS/FAIL/WARN, detail)
     for key in ("reading", "cited_items", "restated_values", "escalations"):
         rows.append(("schema", key, "PASS" if key in answer else "FAIL", "" if key in answer else "missing key"))
@@ -289,6 +354,13 @@ def check(answer, items):
         rows.append(("transformation language (for operator read)", repr(m.group(0)), "WARN",
                      f"{where}: …" + reading[a:b].replace("\n", " ") + "…"))
     rows += _element_union_rows(scan, reading, items)
+    # Civic modes exclude palaces (ground rule 7): palace or life-area words are for the operator's
+    # read (N43). Never a failure. Lab mode reads palaces, so the row does not run there.
+    if mode in CIVIC_MODES:
+        for m in LIFE_AREA.finditer(scan):
+            a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+            rows.append(("palace / life-area word, civic mode (for operator read)", repr(m.group(0)), "WARN",
+                         "…" + reading[a:b].replace("\n", " ") + "…"))
     return rows
 
 
@@ -307,6 +379,12 @@ def _element_union_rows(scan, reading, items):
         rows.append(("element named for a union (for operator read)", repr(m.group(0)), "WARN",
                      f"{where}: …" + reading[a:b].replace("\n", " ") + "…"))
     return rows
+
+
+# Secondary warning, civic modes: palace or life-area words (N43).
+LIFE_AREA = re.compile(
+    r"\b(career\w*|public\w*|legac(?:y|ies)|ancestor\w*|ancestral|parent\w*|spous\w*|marri\w*|"
+    r"child\w*|famil(?:y|ies|ial))\b", re.I)
 
 
 # Secondary warning: an element named as what a union is made of (N39).
@@ -332,14 +410,16 @@ PREDICTIVE = re.compile(
     r"is sure to|are sure to)\b", re.I)
 
 
-def report(raw, items):
+def report(raw, items, mode="boundary"):
     """Parse Kimi's raw answer, run every check, print the table. Returns the exit code."""
+    if mode == "lab":
+        print("LAB — deceased historical figures only; never published directly (N43)")
     try:
         answer = parse(raw)
     except (json.JSONDecodeError, AttributeError) as e:
         print(f"FAIL  answer is not valid JSON: {e}")
         return 1
-    rows = check(answer, items)
+    rows = check(answer, items, mode)
     width = max(len(r[0]) for r in rows)
     for name, subject, verdict, detail in rows:
         print(f"{verdict:4}  {name:<{width}}  {subject}" + (f"  — {detail}" if detail else ""))
@@ -349,51 +429,72 @@ def report(raw, items):
     return 1 if fails else 0
 
 
+def mode_view(field_map, mode):
+    """What Kimi is shown: the full map in lab mode, the palace-free civic view otherwise."""
+    return field_map if mode == "lab" else civic_view(field_map)
+
+
 def recheck(path):
     """Re-run the checker on a saved output file. No Kimi call; no key needed."""
     record = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
-    field_map = resolve_chart(**load_digong_input())
+    mode = record.get("mode", "boundary")
+    kwargs, _ = load_chart(ROOT / record["chart"] if record.get("chart") else DEFAULT_CHART)
+    field_map = resolve_chart(**kwargs)
     now = hashlib.sha256(to_json(field_map).encode("utf-8")).hexdigest()
     print(f"Recheck: {path}")
-    print(f"  model {record.get('model')} | mode {record.get('mode', 'boundary (pre-mode run)')} | run_at {record.get('run_at')}")
+    print(f"  model {record.get('model')} | mode {record.get('mode', 'boundary (pre-mode run)')} | run_at {record.get('run_at')}"
+          f" | chart {record.get('chart', 'golden/digong.json (pre-chart run)')}")
     same = record.get("map_sha256") == now
     print(f"  map hash {'matches' if same else 'DIFFERS from'} the current resolver output"
           + ("" if same else " — the checks compare against today's map, not the one Kimi saw"))
-    return report(record["raw_content"], catalog(field_map))
+    return report(record["raw_content"], catalog(mode_view(field_map, mode)), mode)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=sorted(INSTRUCTIONS), default="boundary")
+    ap.add_argument("--chart", type=pathlib.Path, default=DEFAULT_CHART,
+                    help="chart file in golden format (default golden/digong.json); lab mode requires "
+                         "subject.status = \"deceased\"")
     ap.add_argument("--recheck", metavar="FILE", help="run the checker on a saved output file; no Kimi call")
     args = ap.parse_args()
     if args.recheck:
         return recheck(args.recheck)
     mode = args.mode
+    kwargs, case = load_chart(args.chart)
+    if mode == "lab" and (refusal := lab_refusal(case)):
+        sys.exit(refusal)
     if not os.environ.get("MOONSHOT_API_KEY"):
         sys.exit("MOONSHOT_API_KEY is not set in this shell. Set it in your own terminal session "
                  "(PowerShell: $env:MOONSHOT_API_KEY = \"<your key>\") and run again. "
                  "Never paste the key into a chat or a file.")
     print(f"Mode: {PROMPT_LABEL[mode]}")
-    field_map = resolve_chart(**load_digong_input())
-    items = catalog(field_map)
-    resp = ask_kimi(field_map, items, mode)
+    field_map = resolve_chart(**kwargs)
+    view = mode_view(field_map, mode)
+    items = catalog(view)
+    resp = ask_kimi(view, items, mode)
     raw = resp.choices[0].message.content or ""
 
-    OUT.mkdir(parents=True, exist_ok=True)
+    out_dir = OUT / "lab" if mode == "lab" else OUT
+    out_dir.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    chart_rel = args.chart.resolve().relative_to(ROOT).as_posix()
     record = {
         "model": DEFAULT_MODEL, "base_url": BASE_URL, "run_at": stamp,
         "mode": mode, "prompt_label": PROMPT_LABEL[mode], "instruction": INSTRUCTIONS[mode],
+        "chart": chart_rel, "palaces_sent": mode == "lab",
         "map_sha256": hashlib.sha256(to_json(field_map).encode("utf-8")).hexdigest(),
         "usage": resp.usage.model_dump() if resp.usage else None,
         "finish_reason": resp.choices[0].finish_reason,
         "raw_content": raw,
     }
-    out = OUT / f"kimi_boundary_digong_{mode}_{stamp}.json"
+    if mode == "lab":
+        record["LAB"] = ("LAB output: deceased historical figures only. Never published directly; anything "
+                         "leaving the lab passes the civic filter and the operator's editorial review (N43).")
+    out = out_dir / f"kimi_boundary_{pathlib.Path(chart_rel).stem}_{mode}_{stamp}.json"
     out.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Raw output saved: {out}")
-    return report(raw, items)
+    return report(raw, items, mode)
 
 
 if __name__ == "__main__":

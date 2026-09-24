@@ -43,6 +43,16 @@ TEN_GOD_TRADITIONAL = {
     "正财": "正財", "七杀": "七殺", "正官": "正官", "偏印": "偏印", "正印": "正印",
 }
 
+# Palaces by pillar (operator ruling N42), from 子平真詮 ch. 23 論宮分用神配六親 原文:
+# 「其由宮分配之者，則年月日時，自上而下；祖父妻子，亦自上而下。以地相配，適得其宜，不易之位也。」
+# Placed on the branch (the operator's reading of 以地相配). No other palace meanings unless located.
+PALACES = {
+    "year": ("祖", "ancestors"),
+    "month": ("父母", "parents"),
+    "day": ("妻", "spouse"),
+    "hour": ("子", "children"),
+}
+
 # R19 (0.1c, provisional): 三會 > 三合 > 六合. Lower number wins a contested branch.
 COMBINATION_RANK = {"三會": 0, "三合": 1, "六合": 2}
 

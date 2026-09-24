@@ -17,7 +17,7 @@ from .derive import Field, ten_god
 from .rulings import CAPTURE_BLOCKED, Escalation
 from .tables import (CLASH, COMBINATION_RANK, DESTRUCTION, DIRECTIONAL, DIRECTIONAL_CARDINAL, HARM,
                      PUNISHMENT_PAIRS, PUNISHMENT_SETS, SELF_PUNISHMENT, SIX_HARMONY, STEM_COMBINATION,
-                     STEM_ELEMENT, STEM_GATE_KNOWN, STEMS, THREE_HARMONY, controls)
+                     PALACES, STEM_ELEMENT, STEM_GATE_KNOWN, STEMS, THREE_HARMONY, controls)
 
 RESOLVER_VERSION = "phase1-0.1"
 MAX_WORLDS = 512
@@ -640,13 +640,38 @@ def _dedupe_by_world(obj):
 
 # ---- public -----------------------------------------------------------------------------------
 
+PALACE_RULE = "子平真詮 ch. 23 論宮分用神配六親: 年月日時，自上而下；祖父妻子，亦自上而下 (N42)"
+
+
+def _palace(position):
+    label, gloss = PALACES[position]
+    return {"label": label, "gloss": gloss, "seat": "branch"}
+
+
 def _pillar_json(p, dm, void_pair):
-    return {
+    out = {
         "layer": p.layer, "stem": p.stem, "branch": p.branch,
         "stem_ten_god": "日主" if p.id == "natal.day" else ten_god(dm, p.stem),
         "hidden_stems": [{"stem": h, "ten_god": ten_god(dm, h)} for h in p.hidden],
         "void": p.branch in void_pair,
     }
+    if p.layer == "natal":
+        out["palace"] = _palace(p.position)
+    return out
+
+
+def _palaces(field):
+    """The four ch. 23 palaces by natal pillar. An absent pillar (hour unknown) is a named gap."""
+    present = {p.position for p in field.pillars if p.layer == "natal"}
+    out = {"rule": PALACE_RULE}
+    for position in ("year", "month", "day", "hour"):
+        label, gloss = PALACES[position]
+        if position in present:
+            out[f"natal.{position}"] = label
+        else:
+            out[f"natal.{position}"] = {"token": "GAP", "label": label, "gloss": gloss,
+                                        "note": f"no {position} pillar (birth {position} unknown): the {label} ({gloss}) palace is a named gap"}
+    return out
 
 
 def resolve(field: Field) -> dict:
@@ -681,6 +706,7 @@ def resolve(field: Field) -> dict:
         "input": field.input_record,
         "input_integrity": {"corroboration": field.corroboration, "notes": field.notes},
         "pillars": {p.id: _pillar_json(p, dm, field.void["pair"]) for p in field.pillars},
+        "palaces": _palaces(field),
         "decade": field.decade_record,
         "day_master": dm,
         "void": {**field.void, "rule": "A1 / U11: note only; void branches participate at full weight",

@@ -16,3 +16,5 @@ golden_local/
 
 # Kimi boundary experiment raw output
 experiments/out/
+# Lab-mode output (N43): never committed, never published directly
+experiments/out/lab/
