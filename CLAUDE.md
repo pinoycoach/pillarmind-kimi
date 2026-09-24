@@ -63,10 +63,10 @@ bench's findings and the operator's rulings, never from the resolver's own outpu
 - **digong** (1945-03-28 02:20, Maasin, male; 乙酉/己卯/丙申/己丑, decade 辛未, annual 丙午 2026) —
   under N1/N2, the 0.1e ratified map: 午未 LOCKED_FULL with 丑未 / 丑午 / 卯午 ELIMINATED, 卯酉
   at full force, void 辰巳. The 丙/丙/辛 stem contest stays ESCALATED on E-21.
-- **sara** (戊午/丁巳/癸巳, void 午未, **hour unknown** — hour-unknown mode, no birth time
-  assumed). Her real birth data lives only in `golden_local/` (git-ignored); the committed
-  `golden/sara_2026_08.json` uses a placeholder date that reproduces the same pillars — August 2026 layer (丙申 month): a 巳申 六合 under
-  E-5's gate-divergence finding.
+- **sara** (Sara Duterte, public figure; 1978-05-31, Davao City, female, public record, per N33;
+  戊午/丁巳/癸巳, void 午未, **hour unknown** — hour-unknown mode, no birth time assumed) —
+  August 2026 layer (丙申 month): a 巳申 六合 under E-5's gate-divergence finding. Decade 癸丑,
+  determinate only for as_of from 2016-12-20 23:59:59 up to (not including) 2026-08-31 00:00.
 - **AA** (庚戌/甲申/甲申/丙寅) — the E-23 duplicate-branch clash: natal alone, no clash; in the 庚寅
   decade, the clash returns. **Optional.** Its two golden files skip until birth data is supplied.
   That's not a blocker, and they stay skipped until the operator provides it.
@@ -98,5 +98,6 @@ Per `DECISIONS.md` N32 (which amends N30):
   without the operator's explicit "merge".
 - All work, local or cloud, happens on a branch named for the session; the operator merges.
   Commit and push every session, to the session branch.
-- `nap_*.json` and `dennis_*.json` are never committed, recreated, or faked.
+- `golden_local/`, `nap_*.json` and `dennis_*.json` are never committed, recreated, or faked.
+  `golden_local/` holds private fixtures (for N27); it is git-ignored.
 - Run `git pull` before reading `DECISIONS.md` (N30).
