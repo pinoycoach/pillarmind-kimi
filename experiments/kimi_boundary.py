@@ -271,7 +271,31 @@ def check(answer, items):
             where += f"; transformation is ESCALATED for {open_tf}"
         rows.append(("transformation language (for operator read)", repr(m.group(0)), "WARN",
                      f"{where}: …" + reading[a:b].replace("\n", " ") + "…"))
+    rows += _element_union_rows(scan, reading, items)
     return rows
+
+
+def _element_union_rows(scan, reading, items):
+    """WARN rows for an element named as the substance of a union ('earth block', 'fire mass',
+    'water-type pressure', 土塊) where the map records no TRANSFORMED item. Never a failure."""
+    transformed = sorted(k for k, v in items.items() if str(v["value"]).startswith("TRANSFORMED"))
+    frames = sorted(k for k in items if k.startswith("branch_combinations.三合") or k.startswith("branch_combinations.三會"))
+    rows = []
+    for m in ELEMENT_UNION.finditer(scan):
+        a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+        where = ("the map records no TRANSFORMED item" if not transformed
+                 else f"the map records TRANSFORMED only for {transformed}")
+        if frames:
+            where += f"; frame locks present (a 三合/三會 frame carries its element): {frames}"
+        rows.append(("element named for a union (for operator read)", repr(m.group(0)), "WARN",
+                     f"{where}: …" + reading[a:b].replace("\n", " ") + "…"))
+    return rows
+
+
+# Secondary warning: an element named as what a union is made of (N39).
+ELEMENT_UNION = re.compile(
+    r"\b(?:earth|fire|water|wood|metal)(?:[\s-]+|-type\s+)(?:block|mass|bloc|union|body|alliance|bond|"
+    r"structure|pressure|force|energy|type|element|unit|whole|clump)s?\b|[土火水木金](?:塊|團)", re.I)
 
 
 # Secondary warning: transformation language (RULES: "Combining is not transforming").

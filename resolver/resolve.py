@@ -141,7 +141,10 @@ def _branch_pass(world, branches, months, notes):
                         "losing_resolution": f"{ctype} {pattern} would have completed and locked its legs"}
                 break
             cid = f"{ctype} {pattern} [{'+'.join(b.id for b in legs)}]"
-            record = {"type": ctype, "pattern": pattern, "element": element,
+            # A 六合 transforms only if gated; a 三合/三會 carries its frame element with no gate and
+            # is never TRANSFORMED (0.1c U6; CORE-U6a). Named so neither reads as a transformation (N39).
+            record = {"type": ctype, "pattern": pattern,
+                      ("transforms_to_if_gated" if ctype == "六合" else "frame_element"): element,
                       "legs": [b.id for b in legs], "layers": list(_layers(legs))}
             if alternatives:
                 record["consumption"] = {
