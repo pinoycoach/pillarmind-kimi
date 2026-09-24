@@ -1,0 +1,17 @@
+{
+  "_source": "CONSTRUCTED test chart, not a real person (DECISIONS N45). A birth outside UTC+8, within hours of a 節. Expected values are hand-derived, not taken from resolver output: 立春 2026 is 2026-02-04 04:02 Beijing time (UTC+8), which is 2026-02-03 20:02 UTC, or 15:02 Eastern Standard Time. A New York birth at 16:00 EST on 2026-02-03 (21:00 UTC) is after 立春 in absolute time, so the year is 丙午 and the month 庚寅 (五虎遁: 丙辛之歲尋庚上). The pre-N45 method read 16:00 as a Beijing time, before 立春, and gave 乙巳 year, 己丑 month.",
+  "_status": "Natal only. Tests the N45 rule: month and year by absolute time against the 節; day and hour from local time.",
+  "input": {
+    "birth": "2026-02-03 16:00",
+    "city": "New York",
+    "sex": "male",
+    "as_of": null,
+    "layers": []
+  },
+  "expected": {
+    "pillars": {
+      "natal.year": "丙午",
+      "natal.month": "庚寅"
+    }
+  }
+}

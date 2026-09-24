@@ -78,9 +78,26 @@ def _eight_char(t: dt.datetime):
     return ec
 
 
-def _pillars_at(t: dt.datetime) -> tuple:
-    ec = _eight_char(t)
-    return ec.getYear(), ec.getMonth(), ec.getDay(), ec.getTime()
+# lunar-python computes its 節 in Beijing time (UTC+8).
+BEIJING = dt.timezone(dt.timedelta(hours=8))
+
+
+def _beijing(t_local: dt.datetime, zone: str) -> dt.datetime:
+    """The same absolute moment as a local clock time at the birthplace, written as Beijing time."""
+    return t_local.replace(tzinfo=ZoneInfo(zone)).astimezone(BEIJING).replace(tzinfo=None)
+
+
+def _local_from_beijing(t_bj: dt.datetime, zone: str) -> dt.datetime:
+    return t_bj.replace(tzinfo=BEIJING).astimezone(ZoneInfo(zone)).replace(tzinfo=None)
+
+
+def _pillars_at(t: dt.datetime, zone: str, day_hour_time: dt.datetime | None = None) -> tuple:
+    """N45 (operator ruling, extending N19): month and year pillars are decided by comparing the
+    birth moment with the 節 moment in absolute time, whatever the birthplace's zone; day and hour
+    pillars come from local time at the birthplace (day_hour_time, if given, else t)."""
+    ym = _eight_char(_beijing(t, zone))
+    dh = _eight_char(day_hour_time or t)
+    return ym.getYear(), ym.getMonth(), dh.getDay(), dh.getTime()
 
 
 def _hidden(branch: str) -> list:
@@ -113,17 +130,23 @@ def _check_input_integrity(birth: dt.datetime, zone: str) -> list:
     local = birth.replace(tzinfo=ZoneInfo(zone))
     dst = local.dst()
     if dst:
-        standard = birth - dst
-        if _pillars_at(standard) != _pillars_at(birth):
+        # The absolute moment is fixed by tzdata's offset; DST can only move the local day/hour.
+        clock = _pillars_at(birth, zone)
+        standard = _pillars_at(birth, zone, day_hour_time=birth - dst)
+        if standard != clock:
             raise HardStop(
                 f"Pillar discrepancy detected that cannot be resolved by data entry review. "
                 f"{zone} observed daylight saving on {birth:%Y-%m-%d}; clock time gives "
-                f"{'·'.join(_pillars_at(birth))}, standard time gives {'·'.join(_pillars_at(standard))}. "
+                f"{'·'.join(clock)}, standard time gives {'·'.join(standard)}. "
                 f"The stack has no birth-time offset intake rule. Human verification required.")
         notes.append(f"DST in force at birth ({zone}); pillars identical with and without it. BOUNDED.")
-    notes.append("Clock time fed to lunar-python unadjusted; no longitude / true-solar-time correction "
-                 "is applied (no intake rule in the stack).")
+    notes.append(TIME_NOTE)
     return notes
+
+
+TIME_NOTE = ("Year and month pillars: the birth moment compared with the 節 in absolute time (N45). Day and "
+             "hour pillars: local clock time at the birthplace, with no longitude / true-solar-time "
+             "correction (no intake rule in the stack).")
 
 
 def _void(day_pillar: str, ec) -> dict:
@@ -164,10 +187,13 @@ def _add_years(t: dt.datetime, n: int) -> dt.datetime:
         return t.replace(year=t.year + n, day=28)
 
 
-def _first_start(ec, sex: str):
+def _first_start(ec, sex: str, zone: str):
+    """ec is built on the Beijing-time moment (N45), so the 起運 distance to the 節 is absolute;
+    the start it returns is Beijing time and is converted back to the birthplace's local time."""
     yun = ec.getYun({"male": 1, "female": 0}[sex], LUNAR_SECT_YUN)
     s = yun.getStartSolar()
-    return dt.datetime(s.getYear(), s.getMonth(), s.getDay(), s.getHour(), s.getMinute(), s.getSecond()), yun
+    start_bj = dt.datetime(s.getYear(), s.getMonth(), s.getDay(), s.getHour(), s.getMinute(), s.getSecond())
+    return _local_from_beijing(start_bj, zone), yun
 
 
 def _decade_index(first_start: dt.datetime, as_of: dt.datetime) -> int:
@@ -188,10 +214,10 @@ def _span(values: list):
     return iso[0] if len(set(iso)) == 1 else {"earliest": min(iso), "latest": max(iso)}
 
 
-def _decade_at(ecs: list, sex: str, as_of: dt.datetime):
+def _decade_at(ecs: list, sex: str, as_of: dt.datetime, zone: str):
     """ecs holds one EightChar, or two (earliest and latest possible birth moment) when the hour
     is unknown; the 起運 start then moves with the hour and is reported as a range."""
-    starts, yuns = zip(*(_first_start(ec, sex) for ec in ecs))
+    starts, yuns = zip(*(_first_start(ec, sex, zone) for ec in ecs))
     yun = yuns[0]
     record = {
         "direction": "forward" if yun.isForward() else "backward",
@@ -224,7 +250,7 @@ def _hour_unknown_bounds(date: dt.date, zone: str):
     and day must be the same at both, or the unknown hour decides a pillar and the run stops."""
     lo = dt.datetime(date.year, date.month, date.day, 0, 0, 0)
     hi = dt.datetime(date.year, date.month, date.day, 23, 59, 59)
-    p_lo, p_hi = _pillars_at(lo)[:3], _pillars_at(hi)[:3]
+    p_lo, p_hi = _pillars_at(lo, zone)[:3], _pillars_at(hi, zone)[:3]
     if p_lo != p_hi:
         raise HardStop(
             f"Pillar discrepancy detected that cannot be resolved by data entry review. With the hour "
@@ -240,13 +266,13 @@ def _hour_unknown_bounds(date: dt.date, zone: str):
                      f"rules neither. Not excluded, because the hour is unknown.")
     for t in (lo, hi):
         dst = t.replace(tzinfo=ZoneInfo(zone)).dst()
-        if dst and _pillars_at(t - dst)[:3] != p_lo:
+        if dst and _pillars_at(t, zone, day_hour_time=t - dst)[:3] != p_lo:
             notes.append(f"{zone} clock offset of {dst} (tzdata) at {t:%H:%M}: at standard time a birth "
-                         f"near midnight falls on a different day ({_pillars_at(t - dst)[2]}). "
+                         f"near midnight falls on a different day "
+                         f"({_pillars_at(t, zone, day_hour_time=t - dst)[2]}). "
                          f"Not excluded, because the hour is unknown.")
             break
-    notes.append("Clock time fed to lunar-python unadjusted; no longitude / true-solar-time correction "
-                 "is applied (no intake rule in the stack).")
+    notes.append(TIME_NOTE)
     return lo, hi, notes
 
 
@@ -267,26 +293,28 @@ def derive(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = 
 
     if hour_known:
         notes = _check_input_integrity(birth, zone)
-        ec = _eight_char(birth)
-        yun_ecs = [ec]
-        y, m, d, h = ec.getYear(), ec.getMonth(), ec.getDay(), ec.getTime()
+        ec = _eight_char(birth)                                   # local: day pillar and void
+        yun_ecs = [_eight_char(_beijing(birth, zone))]            # absolute: 起運 distance to the 節
+        y, m, d, h = _pillars_at(birth, zone)
     else:
         lo, hi, notes = _hour_unknown_bounds(birth.date(), zone)
         ec = _eight_char(lo)
-        yun_ecs = [ec, _eight_char(hi)]
-        y, m, d, h = ec.getYear(), ec.getMonth(), ec.getDay(), None
+        yun_ecs = [_eight_char(_beijing(lo, zone)), _eight_char(_beijing(hi, zone))]
+        y, m, d, _ = _pillars_at(lo, zone)
+        h = None
     positions = [("year", y), ("month", m), ("day", d)] + ([("hour", h)] if h else [])
     pillars = [Pillar("natal", pos, p[0], p[1], _hidden(p[1])) for pos, p in positions]
 
     decade_record = None
     if as_of is not None and layers:
-        at = _eight_char(as_of)
-        transit = {"annual": at.getYear(), "monthly": at.getMonth(), "daily": at.getDay()}
+        # as_of is read as a local time at the birthplace; annual and monthly by the same N45 rule.
+        a_year, a_month, a_day, _ = _pillars_at(as_of, zone)
+        transit = {"annual": a_year, "monthly": a_month, "daily": a_day}
         for layer in TRANSIT_LAYERS:
             if layer not in layers:
                 continue
             if layer == "decade":
-                gz, decade_record = _decade_at(yun_ecs, sex, as_of)
+                gz, decade_record = _decade_at(yun_ecs, sex, as_of, zone)
                 if gz is None:
                     notes.append(decade_record["note"])
                     continue
