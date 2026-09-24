@@ -59,6 +59,19 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
   "Don't let…", "Take action…", "Capitalize on…", "Deploy…", "Protect your…", "Ruthlessly…". The
   permitted substitution is the Mechanical Necessity formula: "For [condition] to hold, [element]
   must [function].""
+  "Vocabulary is structural. No luck, fate, destiny, fortune, auspicious, inauspicious."
+  "Commercial reframing is blocked. A broken formation is broken. Do not soften a 破格 verdict, and
+  do not present a structural constraint as an opportunity."
+
+READING GROUND (operator draft, test only — not N6)
+Terrain, not events. Describe conditions: pressure, support, contest, what is bound and what is free. Never predict events.
+The one walking the terrain has the final say. Same chart, not the same life. The reading shows the ground; the person's choices, effort, faith and grace decide what happens on it.
+Speak plainly where the map is settled. Where an item fires, locks or is eliminated, say what it means with conviction, not hedging. Where the map is escalated, present every candidate as equally open.
+No medical, legal or mental-health statements. The chart describes terrain; it is not a diagnosis, a legal opinion or therapy. Where a question touches these, say so plainly and point to a professional.
+Quiet is not empty. If nothing in the chart acts on an area, the chart is silent there, which never means little happens in the person's life.
+Don't go beyond what was asked.
+Public figures: civic layer only. Structure, never a portrait. Nothing about private life, health or fate.
+The best output is the standard. Not a fortune cookie.
 """
 
 SCHEMA = """Return ONLY a JSON object with exactly these keys:
@@ -78,12 +91,14 @@ INSTRUCTIONS = {
     # TEST PROMPT, NOT N6. It exists to test the boundary under real interpretation; it is not the
     # interpretation prompt, which N6 has not decided.
     "interpret": PREAMBLE + """
-Your task is a LAYER-3 READING of this chart for the year 2026 (the annual layer in the map).
+This chart belongs to a LIVING PUBLIC FIGURE. Your task is a LAYER-3 READING of it for the year
+2026 (the annual layer in the map), scoped to the CIVIC, STRUCTURAL LAYER only.
 - For each item that FIRES (value FULL_FORCE), each item that is LOCKED (LOCKED_FULL), and each
-  item that is ELIMINATED, say what it means for this chart in 2026.
-- For each ESCALATED item, give the reading under EACH candidate in turn, and say how the readings
-  differ. Treat the candidates as equally open. Do not choose between them, rank them, or say
-  which is more likely.
+  item that is ELIMINATED, say what it means as terrain in 2026.
+- For the E-21 escalation (五合 丙辛), and every other ESCALATED item, give the reading under EACH
+  candidate in turn, and say how the readings differ. Treat the candidates as equally open. Do not
+  choose between them, rank them, or say which is more likely.
+- No portrait of the person, nothing about private life, nothing about health.
 """ + RULES + "\n" + SCHEMA,
 }
 PROMPT_LABEL = {"boundary": "boundary (interpret-only)", "interpret": "interpret — TEST PROMPT, NOT N6"}
@@ -215,11 +230,18 @@ def check(answer, items):
                          f"reading names {len(named)} of {len(cands)} candidates: {named!r}"))
     # Secondary warning: predictive language in the reading (0.1d Patch 7 item 2). For the operator's
     # read; never counted as a failure.
-    for m in PREDICTIVE.finditer(reading):
-        a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
-        rows.append(("predictive language (for operator read)", repr(m.group(0)), "WARN",
-                     "…" + reading[a:b].replace("\n", " ") + "…"))
+    for pattern, label in ((PREDICTIVE, "predictive language (for operator read)"),
+                           (HEALTH, "health / mortality language (for operator read)")):
+        for m in pattern.finditer(reading):
+            a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+            rows.append((label, repr(m.group(0)), "WARN", "…" + reading[a:b].replace("\n", " ") + "…"))
     return rows
+
+
+# Secondary warning: health and mortality language (READING GROUND; 0.1c §0). Never a failure.
+HEALTH = re.compile(
+    r"\b(sick\w*|ill(?:ness|nesses)?|disease\w*|death\w*|die|dies|died|dying|lifespan\w*|"
+    r"accident\w*|cancer\w*|hospital\w*)\b", re.I)
 
 
 PREDICTIVE = re.compile(
