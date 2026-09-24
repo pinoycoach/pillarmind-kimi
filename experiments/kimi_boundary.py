@@ -20,6 +20,8 @@ Modes (--mode):
 Usage (Windows PowerShell, in your own terminal; never paste the key into a chat or a file):
     $env:MOONSHOT_API_KEY = "<your key>"
     .\\.venv\\Scripts\\python.exe -X utf8 experiments\\kimi_boundary.py --mode interpret
+Re-check a saved run without calling Kimi (no key needed):
+    .\\.venv\\Scripts\\python.exe -X utf8 experiments\\kimi_boundary.py --recheck experiments\\out\\<file>.json
 """
 import argparse
 import datetime as dt
@@ -48,6 +50,15 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
 - Where an item's value is ESCALATED, lay out its candidates without choosing one. Do not describe
   an escalated item as settled, resolved, likely, or leaning either way.
 - Refer to items only by the ids in the ITEM CATALOG.
+- Prose discipline, in the specification's own words (V10 0.1d Patch 7; 0.1c §0):
+  "Conditions, not outcomes. State the condition. Do not predict what will happen. The biological
+  case in §0 is the strictest instance of this rule, not its whole extent."
+  "No biological outcome predictions. Organ systems and structural loads may be named. Disease
+  outcomes may not."
+  "No behavioural prescriptions. Banned: "You must…", "Avoid…", "You should…", "Make sure you…",
+  "Don't let…", "Take action…", "Capitalize on…", "Deploy…", "Protect your…", "Ruthlessly…". The
+  permitted substitution is the Mechanical Necessity formula: "For [condition] to hold, [element]
+  must [function].""
 """
 
 SCHEMA = """Return ONLY a JSON object with exactly these keys:
@@ -202,13 +213,59 @@ def check(answer, items):
         if len(cands) >= 2 and 1 <= len(named) < len(cands):
             rows.append(("escalation not settled (prose heuristic)", rid, "WARN",
                          f"reading names {len(named)} of {len(cands)} candidates: {named!r}"))
+    # Secondary warning: predictive language in the reading (0.1d Patch 7 item 2). For the operator's
+    # read; never counted as a failure.
+    for m in PREDICTIVE.finditer(reading):
+        a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+        rows.append(("predictive language (for operator read)", repr(m.group(0)), "WARN",
+                     "…" + reading[a:b].replace("\n", " ") + "…"))
     return rows
+
+
+PREDICTIVE = re.compile(
+    r"\b(will|won't|shall|is going to|are going to|going to|expect(?:s|ed|ing)?|likely to|unlikely to|"
+    r"bound to|certain to|set to|poised to|destined|forecast\w*|predict\w*|in store|lies ahead|"
+    r"is sure to|are sure to)\b", re.I)
+
+
+def report(raw, items):
+    """Parse Kimi's raw answer, run every check, print the table. Returns the exit code."""
+    try:
+        answer = parse(raw)
+    except (json.JSONDecodeError, AttributeError) as e:
+        print(f"FAIL  answer is not valid JSON: {e}")
+        return 1
+    rows = check(answer, items)
+    width = max(len(r[0]) for r in rows)
+    for name, subject, verdict, detail in rows:
+        print(f"{verdict:4}  {name:<{width}}  {subject}" + (f"  — {detail}" if detail else ""))
+    fails = sum(r[2] == "FAIL" for r in rows)
+    warns = sum(r[2] == "WARN" for r in rows)
+    print(f"\n{'PASS' if not fails else 'FAIL'}: {len(rows)} checks, {fails} failed, {warns} warnings")
+    return 1 if fails else 0
+
+
+def recheck(path):
+    """Re-run the checker on a saved output file. No Kimi call; no key needed."""
+    record = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    field_map = resolve_chart(**load_digong_input())
+    now = hashlib.sha256(to_json(field_map).encode("utf-8")).hexdigest()
+    print(f"Recheck: {path}")
+    print(f"  model {record.get('model')} | mode {record.get('mode', 'boundary (pre-mode run)')} | run_at {record.get('run_at')}")
+    same = record.get("map_sha256") == now
+    print(f"  map hash {'matches' if same else 'DIFFERS from'} the current resolver output"
+          + ("" if same else " — the checks compare against today's map, not the one Kimi saw"))
+    return report(record["raw_content"], catalog(field_map))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=sorted(INSTRUCTIONS), default="boundary")
-    mode = ap.parse_args().mode
+    ap.add_argument("--recheck", metavar="FILE", help="run the checker on a saved output file; no Kimi call")
+    args = ap.parse_args()
+    if args.recheck:
+        return recheck(args.recheck)
+    mode = args.mode
     if not os.environ.get("MOONSHOT_API_KEY"):
         sys.exit("MOONSHOT_API_KEY is not set in this shell. Set it in your own terminal session "
                  "(PowerShell: $env:MOONSHOT_API_KEY = \"<your key>\") and run again. "
@@ -232,20 +289,7 @@ def main():
     out = OUT / f"kimi_boundary_digong_{mode}_{stamp}.json"
     out.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Raw output saved: {out}")
-
-    try:
-        answer = parse(raw)
-    except (json.JSONDecodeError, AttributeError) as e:
-        print(f"FAIL  answer is not valid JSON: {e}")
-        return 1
-    rows = check(answer, items)
-    width = max(len(r[0]) for r in rows)
-    for name, subject, verdict, detail in rows:
-        print(f"{verdict:4}  {name:<{width}}  {subject}" + (f"  — {detail}" if detail else ""))
-    fails = sum(r[2] == "FAIL" for r in rows)
-    warns = sum(r[2] == "WARN" for r in rows)
-    print(f"\n{'PASS' if not fails else 'FAIL'}: {len(rows)} checks, {fails} failed, {warns} warnings")
-    return 1 if fails else 0
+    return report(raw, items)
 
 
 if __name__ == "__main__":
