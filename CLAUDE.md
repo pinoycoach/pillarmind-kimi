@@ -89,3 +89,14 @@ bench's findings and the operator's rulings, never from the resolver's own outpu
 Kimi API calls of any kind. The interpretation prompt. The runtime-prompt compile question (N6).
 Anything about which Kimi model to use (N5) — that's a Phase 3 decision made on output quality,
 not needed to build a resolver.
+
+## Standing rules
+
+Per `DECISIONS.md` N32 (which amends N30):
+
+- No commit reaches `main` without an operator decision. Never push to or merge into `main`
+  without the operator's explicit "merge".
+- All work, local or cloud, happens on a branch named for the session; the operator merges.
+  Commit and push every session, to the session branch.
+- `nap_*.json` and `dennis_*.json` are never committed, recreated, or faked.
+- Run `git pull` before reading `DECISIONS.md` (N30).

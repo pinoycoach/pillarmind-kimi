@@ -196,6 +196,19 @@ def test_lock_on_the_single_side_still_eliminates():
     assert "刑 子卯" in r["eliminations"]
 
 
+def test_both_duplicates_locked_eliminates():
+    """ch. 7 因解而反得刑沖, the case with no free duplicate left: two 卯, each locked in its own
+    卯戌 六合 (Year+Month, Day+Hour), against one FREE 子 on the annual layer. Counting FREE
+    instances only (N22), the 子 faces no free 卯, so the 子卯 刑 is ELIMINATED."""
+    r = resolve(_field(("乙卯", "丙戌", "丁卯", "戊戌"), (("annual", "丙子"),)))
+    assert r["branch_combinations"]["六合 卯戌 [natal.year+natal.month]"]["lock"] == "LOCKED_FULL"
+    assert r["branch_combinations"]["六合 卯戌 [natal.day+natal.hour]"]["lock"] == "LOCKED_FULL"
+    assert r["branch_tokens"]["annual"] == "FREE"
+    rec = r["punishments"]["刑 子卯"]
+    assert rec["outcome"] == "ELIMINATED"
+    assert rec["rule"].endswith("(every duplicate is locked)")
+
+
 def test_harm_with_a_locked_duplicate_stays_escalated():
     # 子未 harm: two 未 (one locked in 午未), one 子. Outside E-23's located scope.
     r = resolve(_field(("乙未", "丙子", "甲午", "丁未")))

@@ -1,10 +1,10 @@
 {
-  "_source": "Expected values from golden_local/sara_2026_08.json (the bench's sara findings with her real birth data; local only, not in the repository). The birth date below is a PLACEHOLDER, not sara's: 2038-05-16 is the only date in a 戊午 year that also gives 丁巳 month and 癸巳 day, so it reproduces her natal pillars (戊午·丁巳·癸巳), void 午未, and, with the same as_of, the 丙申 monthly layer and the 巳申 六合 under E-5's gate-divergence finding (CLAUDE.md). A 2038 birth has no decade in force in 2026; the expectations below never checked the decade.",
-  "_status": "Placeholder input; hour unknown. Run in hour-unknown mode.",
+  "_source": "Sara Duterte, public figure; birth date and place are public record (DECISIONS N33, superseding N31's placeholder). Expected values are the bench's sara findings, hand-verified: natal 戊午 丁巳 癸巳, void 午未, the 丙申 monthly layer, and the 巳申 六合 under E-5's gate-divergence finding (CLAUDE.md). Birth time unknown: run in hour-unknown mode, no hour pillar.",
+  "_status": "SAFE AS_OF WINDOW: with the hour unknown the 起運 start is a range, so her decade boundaries are ranges. 癸丑 (decade 4) starts between 2016-08-31 00:00 and 2016-12-20 23:59:59 and ends between 2026-08-31 00:00 and 2026-12-20 23:59:59. The decade layer is determinate (癸丑) only for as_of from 2016-12-20 23:59:59 up to, but not including, 2026-08-31 00:00. Outside that window it is UNDETERMINED (甲寅/癸丑 before, 癸丑/壬子 after) and omitted from the pillars. The as_of below (2026-08-15) is 16 days inside the window's end.",
   "input": {
-    "birth": "2038-05-16",
+    "birth": "1978-05-31",
     "hour_known": false,
-    "city": "Manila",
+    "city": "Davao City",
     "sex": "female",
     "as_of": "2026-08-15 12:00",
     "layers": ["decade", "annual", "monthly"]
