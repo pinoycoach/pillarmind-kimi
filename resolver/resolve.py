@@ -418,10 +418,12 @@ def _stem_blocker(world, pair, stems, hidden_all, combined, cid):
                 note=f"{x} present only as a hidden stem; whether it blocks is open"))
         return "MET"
     positions = sorted(NATAL_ORDER[s.id] for s in combined if s.id in NATAL_ORDER)
-    if len(positions) == 2:
-        between = [s for s in stems if s.id in NATAL_ORDER and positions[0] < NATAL_ORDER[s.id] < positions[1]]
-        if any(s.char == x for s in between):
-            return f"NOT_MET (有{x}字間之則不化: {x} stands between the two, F1 妒合; E-16 sense)"
+    if len(combined) != 2 or len(positions) != 2:
+        # No single natal pair (a contest, or a transit partner): "between" is undefined.
+        return f"MET (有{x}字間之 not evaluable: no single natal combining pair)"
+    between = [s for s in stems if s.id in NATAL_ORDER and positions[0] < NATAL_ORDER[s.id] < positions[1]]
+    if any(s.char == x for s in between):
+        return f"NOT_MET (有{x}字間之則不化: {x} stands between the two, F1 妒合; E-16 sense)"
     return "MET"
 
 
@@ -440,7 +442,7 @@ def _stem_pass(world, stems, dm, months, hidden_all):
                                 "note": f"partner {missing} exists only as a hidden stem and does not reach surface"}
             continue
         insts = xs + ys
-        rec = {"element": element, "instances": [s.id for s in insts]}
+        rec = {"transforms_to_if_gated": element, "instances": [s.id for s in insts]}
         transit = any(s.layer != "natal" for s in insts)
         combined = []
         if len(xs) == 1 and len(ys) == 1:
@@ -500,6 +502,10 @@ def _stem_pass(world, stems, dm, months, hidden_all):
         if isinstance(rec.get("status"), dict):
             for s in insts:
                 tokens[s.id] = rec["status"]
+        if not combined:
+            # The gate is recorded for every stem combination, settled or not (N37), with blockers
+            # evaluated, so the map itself carries it. It decides nothing here: no state is set.
+            rec["gate"] = _stem_gate_state(world, pair, months, stems, hidden_all, cid, insts)
         if combined:
             gate = _stem_gate_state(world, pair, months, stems, hidden_all, cid, combined)
             rec["gate"] = gate

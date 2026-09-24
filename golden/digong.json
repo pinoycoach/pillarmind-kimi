@@ -1,5 +1,5 @@
 {
-  "_source": "Bench hand derivation: stack/v10_0_1e_1_handover.md Part One (items 1-9), v10_0_1e_2_addendum_A.md §B1, v10_0_1e_3_addendum_B.md §C2/§C5. The 午未 lock and its three eliminations follow the operator's 23 Sep rulings N1 = LOCKED_FULL and N2 = capture allowed (DECISIONS.md); under those rulings the ratified map stands as written. The 丙/丙/辛 contest stays escalated on E-21.",
+  "_source": "Bench hand derivation: stack/v10_0_1e_1_handover.md Part One (items 1-9), v10_0_1e_2_addendum_A.md §B1, v10_0_1e_3_addendum_B.md §C2/§C5. The 午未 lock and its three eliminations follow the operator's 23 Sep rulings N1 = LOCKED_FULL and N2 = capture allowed (DECISIONS.md); under those rulings the ratified map stands as written. The 丙/丙/辛 contest stays escalated on E-21. Its gate is NOT_MET: the ruled F1 row 丙辛 in a 卯 month (N28), tested in test_stem_gate_all_five_f1_rows; recorded in the map from N37.",
   "_status": "Birth data supplied by the operator 23 Sep 2026. The stack had recorded these pillars as operator-asserted (0.1e handover line 7); this file makes them engine-verified.",
   "input": {
     "birth": "1945-03-28 02:20",
@@ -43,7 +43,7 @@
     "harms": {"害 丑午": {"outcome": "ELIMINATED"}},
     "destructions": {"破 午卯": {"outcome": "ELIMINATED"}},
     "stem_combinations": {
-      "五合 丙辛": {"status": {"token": "ESCALATED", "pending": "E-21"}}
+      "五合 丙辛": {"status": {"token": "ESCALATED", "pending": "E-21"}, "gate": "NOT_MET"}
     }
   }
 }

@@ -36,7 +36,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from kimi_audit import BASE_URL, DEFAULT_MODEL      # same endpoint and model as the audit script
-from resolver import resolve_chart, rulings, to_json
+from resolver import resolve_chart, to_json
 
 OUT = ROOT / "experiments" / "out"
 ESC = "ESCALATED"
@@ -146,10 +146,9 @@ def catalog(field_map):
     for pool in ("clashes", "harms", "destructions", "punishments"):
         for rid, rec in field_map[pool].items():
             put(f"{pool}.{rid}", rec["outcome"])
-    natal_month = field_map["pillars"]["natal.month"]["branch"]
     for sid, s in field_map["stem_combinations"].items():
         put(f"stem_combinations.{sid}", s.get("state", s.get("status")))
-        if "element" not in s:                         # partner absent from the surface: no combination
+        if "transforms_to_if_gated" not in s:          # partner absent from the surface: no combination
             continue
         state = s.get("state")
         if isinstance(state, str) and state.startswith(("TRANSFORMED", "NEUTRALIZED")):
@@ -157,14 +156,8 @@ def catalog(field_map):
         else:
             put(f"stem_combinations.{sid}.transformation", "NONE_RECORDED",
                 "the map records no transformation for this combination")
-        if "gate" in s:
+        if "gate" in s:                                # read from the map only (N37)
             put(f"stem_combinations.{sid}.gate", s["gate"])
-        else:
-            computed = rulings.stem_gate(sid.split()[-1], natal_month)
-            put(f"stem_combinations.{sid}.gate", computed if isinstance(computed, str) else computed.to_json(),
-                f"computed by the resolver's gate function for the natal month {natal_month}; the map itself "
-                f"records no gate for a combination that is not settled"
-                + ("; blockers (柱有X字 / 有X字間之) not evaluated" if computed == "MET" else ""))
         if s.get("day_master"):
             put(f"stem_combinations.{sid}.day_master", "natal.day", s["day_master"])
     for pool in ("branch_tokens", "stem_tokens"):
