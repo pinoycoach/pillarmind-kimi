@@ -420,7 +420,8 @@ def _stem_blocker(world, pair, stems, hidden_all, combined, cid):
     positions = sorted(NATAL_ORDER[s.id] for s in combined if s.id in NATAL_ORDER)
     if len(combined) != 2 or len(positions) != 2:
         # No single natal pair (a contest, or a transit partner): "between" is undefined.
-        return f"MET (有{x}字間之 not evaluable: no single natal combining pair)"
+        # UNDETERMINED, not "MET (...)": only an exact "MET" may ever produce TRANSFORMED (N38).
+        return f"UNDETERMINED (有{x}字間之 not evaluable: no single natal combining pair)"
     between = [s for s in stems if s.id in NATAL_ORDER and positions[0] < NATAL_ORDER[s.id] < positions[1]]
     if any(s.char == x for s in between):
         return f"NOT_MET (有{x}字間之則不化: {x} stands between the two, F1 妒合; E-16 sense)"

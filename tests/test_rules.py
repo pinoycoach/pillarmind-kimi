@@ -289,6 +289,16 @@ def test_intervener_blocker_between_the_two_stems():
     assert _stem_blocker(World({}), "甲己", stems, [], [stems[2], stems[3]], "t") == "MET"
 
 
+def test_intervener_blocker_not_evaluable_is_undetermined_not_met():
+    """N38: 甲己 with a transit partner (natal 甲, annual 己) in a 辰 month. The month gate is met, but
+    「有戊字間之」 needs a single natal pair to look between, so the recorded gate is UNDETERMINED,
+    never MET, and the unsettled contest (E-21) gets no state."""
+    rec = resolve(_field(("甲子", "丙辰", "壬寅", "庚申"), (("annual", "己酉"),)))["stem_combinations"]["五合 甲己"]
+    assert rec["gate"].startswith("UNDETERMINED (有戊字間之 not evaluable")
+    assert not rec["gate"].startswith("MET")
+    assert rec["status"]["pending"] == "E-21" and "state" not in rec
+
+
 def test_same_pair_destruction_inside_a_six_harmony_escalates_as_e38():
     # 巳 Year + 申 Month lock in 巳申 六合; 申巳 is also a 破 pair.
     out = resolve(_field(("乙巳", "戊申", "甲午", "丙戌")))["destructions"]["破 申巳"]["outcome"]
