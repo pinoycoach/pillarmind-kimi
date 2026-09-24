@@ -35,6 +35,14 @@ HARM = ("子未", "丑午", "寅巳", "卯辰", "申亥", "酉戌")
 DESTRUCTION = ("子酉", "午卯", "寅亥", "申巳", "辰丑", "戌未")
 STEM_COMBINATION = {"甲己": "Earth", "乙庚": "Metal", "丙辛": "Water", "丁壬": "Wood", "戊癸": "Fire"}
 
+# Ten-god labels: lunar-python returns simplified characters; the stack writes traditional (N40).
+# All ten are listed, including the five that are the same in both scripts, so an unexpected label
+# fails loudly instead of passing through.
+TEN_GOD_TRADITIONAL = {
+    "比肩": "比肩", "劫财": "劫財", "食神": "食神", "伤官": "傷官", "偏财": "偏財",
+    "正财": "正財", "七杀": "七殺", "正官": "正官", "偏印": "偏印", "正印": "正印",
+}
+
 # R19 (0.1c, provisional): 三會 > 三合 > 六合. Lower number wins a contested branch.
 COMBINATION_RANK = {"三會": 0, "三合": 1, "六合": 2}
 

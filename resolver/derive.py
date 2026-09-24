@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from lunar_python import Solar
 from lunar_python.util import LunarUtil
 
-from .tables import BRANCHES, STEMS, TRANSIT_LAYERS
+from .tables import BRANCHES, STEMS, TEN_GOD_TRADITIONAL, TRANSIT_LAYERS
 
 LUNAR_SECT_DAY = 2   # lunar-python default: 23:00–24:00 keeps the current day pillar
 LUNAR_SECT_YUN = 1   # lunar-python default 起運 method; declared, not a stack ruling
@@ -88,7 +88,11 @@ def _hidden(branch: str) -> list:
 
 
 def ten_god(day_master: str, stem: str) -> str:
-    return LunarUtil.SHI_SHEN[day_master + stem]
+    """Ten god of a stem relative to the Day Master, in traditional characters (N40)."""
+    label = LunarUtil.SHI_SHEN[day_master + stem]
+    if label not in TEN_GOD_TRADITIONAL:
+        raise ValueError(f"lunar-python ten-god label {label!r} has no traditional mapping")
+    return TEN_GOD_TRADITIONAL[label]
 
 
 def _check_input_integrity(birth: dt.datetime, zone: str) -> list:

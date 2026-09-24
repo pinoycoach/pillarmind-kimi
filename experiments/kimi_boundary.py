@@ -49,7 +49,9 @@ RULES = """- Every pillar, token, lock, clash, harm, destruction, punishment and
   Do not recompute, re-derive, or correct anything, even if you believe the map is wrong.
 - Where an item's value is ESCALATED, lay out its candidates without choosing one. Do not describe
   an escalated item as settled, resolved, likely, or leaning either way.
-- Refer to items only by the ids in the ITEM CATALOG.
+- Write "reading" in plain language. It must contain NO catalog ids: say "the decade stem 辛",
+  not "pillars.decade". Ids belong only in cited_items, restated_values and escalations; use
+  them there exactly as the ITEM CATALOG gives them.
 - Combining is not transforming. Speak of transformation only where the map records it.
 - Prose discipline, in the specification's own words (V10 0.1d Patch 7; 0.1c §0):
   "Conditions, not outcomes. State the condition. Do not predict what will happen. The biological
@@ -77,7 +79,7 @@ The best output is the standard. Not a fortune cookie.
 
 SCHEMA = """Return ONLY a JSON object with exactly these keys:
 {
-  "reading": "<your reading, plain prose>",
+  "reading": "<your reading, plain language, containing no catalog ids>",
   "cited_items": ["<item id from the catalog>", ...],
   "restated_values": [{"id": "<item id>", "value": "<the item's value exactly as the catalog gives it>"}, ...],
   "escalations": [{"id": "<item id>", "candidates": ["<candidate, copied word for word from the catalog>", ...]}, ...]
@@ -100,6 +102,9 @@ This chart belongs to a LIVING PUBLIC FIGURE. Your task is a LAYER-3 READING of 
   candidate in turn, and say how the readings differ. Treat the candidates as equally open. Do not
   choose between them, rank them, or say which is more likely.
 - No portrait of the person, nothing about private life, nothing about health.
+- Read what items mean through the TEN GODS relative to the Day Master (the catalog gives each
+  stem's and hidden stem's ten god): for example, what it means that the contested stem is the
+  Day Master's 正財. All the rules below still apply.
 """ + RULES + "\n" + SCHEMA,
 }
 PROMPT_LABEL = {"boundary": "boundary (interpret-only)", "interpret": "interpret — TEST PROMPT, NOT N6"}
@@ -133,6 +138,11 @@ def catalog(field_map):
         "the Day Master; its own combining never removes it (本身之合, ch. 5)")
     for pid, p in field_map["pillars"].items():
         put(f"pillars.{pid}", p["stem"] + p["branch"])
+        # Ten gods relative to the Day Master, citable (N40): the pillar's stem, then each hidden stem.
+        put(f"pillars.{pid}.stem_ten_god", p["stem_ten_god"], f"ten god of {p['stem']} relative to the Day Master")
+        for h in p["hidden_stems"]:
+            put(f"pillars.{pid}.hidden.{h['stem']}.ten_god", h["ten_god"],
+                f"ten god of hidden {h['stem']} in {p['branch']}, relative to the Day Master")
     put("void.pair", "".join(field_map["void"]["pair"]))
     if field_map.get("decade") and isinstance(field_map["decade"].get("in_force"), dict) \
             and "pillar" in field_map["decade"]["in_force"]:
@@ -252,8 +262,15 @@ def check(answer, items):
     # The language scans skip catalog item ids (e.g. "...transformation" in an id is a field name,
     # not a claim); ids are blanked out, keeping positions so the context snippets stay accurate.
     scan = reading
+    ids_in_prose = []
     for item_id in sorted(items, key=len, reverse=True):
+        if item_id in scan:
+            ids_in_prose.append(item_id)
         scan = scan.replace(item_id, " " * len(item_id))
+    # Secondary warning: the reading must be plain language, with no catalog ids (N40).
+    for item_id in sorted(ids_in_prose):
+        rows.append(("catalog id in reading (plain-language rule)", item_id, "WARN",
+                     "ids belong only in cited_items, restated_values and escalations"))
     for pattern, label in ((PREDICTIVE, "predictive language (for operator read)"),
                            (HEALTH, "health / mortality language (for operator read)")):
         for m in pattern.finditer(scan):
@@ -311,7 +328,7 @@ HEALTH = re.compile(
 
 PREDICTIVE = re.compile(
     r"\b(will|won't|shall|is going to|are going to|going to|expect(?:s|ed|ing)?|likely to|unlikely to|"
-    r"bound to|certain to|set to|poised to|destined|forecast\w*|predict\w*|in store|lies ahead|"
+    r"certain to|set to|poised to|destined|forecast\w*|predict\w*|in store|lies ahead|"
     r"is sure to|are sure to)\b", re.I)
 
 

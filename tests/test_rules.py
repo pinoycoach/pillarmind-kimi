@@ -299,6 +299,19 @@ def test_intervener_blocker_not_evaluable_is_undetermined_not_met():
     assert rec["status"]["pending"] == "E-21" and "state" not in rec
 
 
+def test_ten_gods_are_traditional_for_all_ten_labels():
+    """N40: for a 甲 Day Master the ten stems give all ten labels, in traditional characters."""
+    from resolver.derive import ten_god
+    expected = {"甲": "比肩", "乙": "劫財", "丙": "食神", "丁": "傷官", "戊": "偏財",
+                "己": "正財", "庚": "七殺", "辛": "正官", "壬": "偏印", "癸": "正印"}
+    assert {s: ten_god("甲", s) for s in expected} == expected
+    # and the map carries them: 日主 on the Day stem, traditional labels everywhere else
+    r = resolve(_field(("甲子", "丙寅", "甲午", "庚午")))
+    assert r["pillars"]["natal.day"]["stem_ten_god"] == "日主"
+    assert r["pillars"]["natal.hour"]["stem_ten_god"] == "七殺"
+    assert r["pillars"]["natal.year"]["hidden_stems"][0] == {"stem": "癸", "ten_god": "正印"}
+
+
 def test_same_pair_destruction_inside_a_six_harmony_escalates_as_e38():
     # 巳 Year + 申 Month lock in 巳申 六合; 申巳 is also a 破 pair.
     out = resolve(_field(("乙巳", "戊申", "甲午", "丙戌")))["destructions"]["破 申巳"]["outcome"]
