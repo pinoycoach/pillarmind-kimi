@@ -14,7 +14,7 @@ neither.
 Modes (--mode):
   boundary   (default) interpret-only instruction; the mode of run 20260924-222336 (N35), which
              produced a restatement of the map rather than an interpretation.
-  interpret  TEST PROMPT, NOT N6: asks for a real layer-3 reading of the chart for 2026, under the
+  interpret  TEST PROMPT, NOT N6: asks for a real layer-3 reading of the chart for its annual layer, under the
              same prohibitions (no recomputing or correcting the map, no choosing between candidates).
 
 Usage (Windows PowerShell, in your own terminal; never paste the key into a chat or a file):
@@ -106,10 +106,10 @@ INSTRUCTIONS = {
     # TEST PROMPT, NOT N6. It exists to test the boundary under real interpretation; it is not the
     # interpretation prompt, which N6 has not decided.
     "interpret": PREAMBLE + """
-This chart belongs to a LIVING PUBLIC FIGURE. Your task is a LAYER-3 READING of it for the year
-2026 (the annual layer in the map), scoped to the CIVIC, STRUCTURAL LAYER only.
+This chart belongs to a LIVING PUBLIC FIGURE. Your task is a LAYER-3 READING of it for the period
+of the annual layer in the map, scoped to the CIVIC, STRUCTURAL LAYER only.
 - For each item that FIRES (value FULL_FORCE), each item that is LOCKED (LOCKED_FULL), and each
-  item that is ELIMINATED, say what it means as terrain in 2026.
+  item that is ELIMINATED, say what it means as terrain in that period.
 - For the E-21 escalation (五合 丙辛), and every other ESCALATED item, give the reading under EACH
   candidate in turn, and say how the readings differ. Treat the candidates as equally open. Do not
   choose between them, rank them, or say which is more likely.
@@ -429,9 +429,29 @@ def report(raw, items, mode="boundary"):
     return 1 if fails else 0
 
 
+def blind_view(field_map):
+    """N48: interpretations are blind to identity, to prevent model-side backfitting. Strip the input
+    record (birth date, time, place, sex, any name) and the as_of date, and every derived field that
+    carries them (decade dates and start age, which pin the birth year; the input-integrity notes,
+    which name the zone). Only pillars and derived structures remain."""
+    view = json.loads(json.dumps(field_map, ensure_ascii=False))
+    view.pop("input", None)
+    integrity = view.get("input_integrity") or {}
+    view["input_integrity"] = {"corroboration": integrity.get("corroboration")}
+    decade = view.get("decade")
+    if isinstance(decade, dict):
+        in_force = decade.get("in_force")
+        if isinstance(in_force, dict):
+            keep = ("pillar", "index") if "pillar" in in_force else ("token", "candidates")
+            view["decade"] = {"in_force": {k: in_force[k] for k in keep if k in in_force}}
+        else:
+            view["decade"] = {"in_force": None}
+    return view
+
+
 def mode_view(field_map, mode):
-    """What Kimi is shown: the full map in lab mode, the palace-free civic view otherwise."""
-    return field_map if mode == "lab" else civic_view(field_map)
+    """What Kimi is shown: always blind (N48); palaces only in lab mode, the civic view otherwise."""
+    return blind_view(field_map if mode == "lab" else civic_view(field_map))
 
 
 def recheck(path):
@@ -483,6 +503,10 @@ def main():
         "model": DEFAULT_MODEL, "base_url": BASE_URL, "run_at": stamp,
         "mode": mode, "prompt_label": PROMPT_LABEL[mode], "instruction": INSTRUCTIONS[mode],
         "chart": chart_rel, "palaces_sent": mode == "lab",
+        # N48: Kimi saw the blind view; the operator's record keeps what was stripped.
+        "sent_view": "blind (N48): input record, as_of, decade dates and start age, input-integrity notes removed",
+        "subject_record": {"input": field_map["input"], "decade": field_map["decade"],
+                           "input_integrity_notes": field_map["input_integrity"]["notes"]},
         "map_sha256": hashlib.sha256(to_json(field_map).encode("utf-8")).hexdigest(),
         "usage": resp.usage.model_dump() if resp.usage else None,
         "finish_reason": resp.choices[0].finish_reason,

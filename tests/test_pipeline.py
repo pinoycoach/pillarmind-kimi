@@ -71,6 +71,38 @@ def test_manila_offsets_in_installed_tzdata(date, offset_hours):
     assert date.replace(tzinfo=ZoneInfo("Asia/Manila")).utcoffset() == dt.timedelta(hours=offset_hours)
 
 
+BIRTH, TRANSITS = dt.datetime(1990, 5, 17, 14, 30), ("decade", "annual", "monthly", "daily")
+
+
+def _gz(r, k):
+    return r["pillars"][k]["stem"] + r["pillars"][k]["branch"]
+
+
+def test_as_of_zone_places_the_moment_against_the_jie():
+    """N46: as_of is local time in as_of_zone. 寒露 2026 is 2026-10-08 14:29 Beijing = 02:29 New York
+    (EDT). 03:00 in New York is just after it in absolute time: month 戊戌 (丙午 year, 戌 month).
+    Read as a Manila time, the same clock string would fall 11½ hours before 寒露 (丁酉)."""
+    away = resolve_chart(BIRTH, "Manila", "female", as_of=dt.datetime(2026, 10, 8, 3), layers=TRANSITS,
+                         as_of_zone="New York")
+    home = resolve_chart(BIRTH, "Manila", "female", as_of=dt.datetime(2026, 10, 8, 15), layers=TRANSITS)
+    assert _gz(away, "monthly") == "戊戌"
+    for layer in ("decade", "annual", "monthly", "daily"):    # the same absolute moment, same date locally
+        assert _gz(away, layer) == _gz(home, layer)
+    assert away["input"]["as_of_zone"] == "America/New_York" and home["input"]["as_of_zone"] == "Asia/Manila"
+
+
+def test_as_of_zone_daily_pillar_is_the_local_date_there():
+    """N46: 2026-10-08 22:00 in New York is 2026-10-09 10:00 in Manila. Annual, monthly and decade are
+    absolute and agree; the daily pillar is the local date where the person was: 8 Oct."""
+    away = resolve_chart(BIRTH, "Manila", "female", as_of=dt.datetime(2026, 10, 8, 22), layers=TRANSITS,
+                         as_of_zone="New York")
+    home = resolve_chart(BIRTH, "Manila", "female", as_of=dt.datetime(2026, 10, 9, 10), layers=TRANSITS)
+    oct8 = resolve_chart(BIRTH, "Manila", "female", as_of=dt.datetime(2026, 10, 8, 12), layers=TRANSITS)
+    for layer in ("decade", "annual", "monthly"):
+        assert _gz(away, layer) == _gz(home, layer)
+    assert _gz(away, "daily") == _gz(oct8, "daily") != _gz(home, "daily")
+
+
 def test_unknown_city_is_refused():
     with pytest.raises(ValueError, match="Unknown city"):
         resolve_chart(dt.datetime(1990, 5, 17, 14, 30), "Atlantis", "male")

@@ -24,12 +24,15 @@ if __name__ == "__main__":
     p.add_argument("--city", required=True)
     p.add_argument("--sex", required=True, choices=["male", "female"])
     p.add_argument("--as-of", type=_dt, default=None)
+    p.add_argument("--as-of-zone", default=None,
+                   help="city or IANA zone where the person was at as_of (default: the birthplace)")
     p.add_argument("--layers", nargs="*", default=["decade", "annual"],
                    choices=["decade", "annual", "monthly", "daily"])
     p.add_argument("--out", type=pathlib.Path, default=pathlib.Path("resolved_field_map.json"))
     a = p.parse_args()
     try:
         result = resolve_chart(a.birth, a.city, a.sex, as_of=a.as_of, layers=tuple(a.layers),
+                               as_of_zone=a.as_of_zone,
                                hour_known=not a.hour_unknown)
     except HardStop as stop:
         sys.exit(f"HARD STOP: {stop}")

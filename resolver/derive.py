@@ -277,8 +277,13 @@ def _hour_unknown_bounds(date: dt.date, zone: str):
 
 
 def derive(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = None,
-           layers: tuple = ("decade", "annual"), hour_known: bool = True) -> Field:
+           layers: tuple = ("decade", "annual"), hour_known: bool = True,
+           as_of_zone: str | None = None) -> Field:
     """Birth datetime (local clock time) + city → Field. Transit layers need as_of.
+
+    as_of is a local clock time at the birthplace unless as_of_zone (a city or IANA zone) is given,
+    for readings where the person was elsewhere that day; the daily pillar then comes from that
+    zone's local time, and annual/monthly still follow N45 (absolute time against the 節) (N46).
 
     hour_known=False: only the birth date is used. Year, month and day pillars are derived, the
     hour pillar is omitted, and the decade boundary is reported as a range."""
@@ -290,6 +295,7 @@ def derive(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = 
     if layers and as_of is None:
         raise ValueError("Transit layers require as_of")
     zone = resolve_zone(city)
+    t_zone = resolve_zone(as_of_zone) if as_of_zone else zone
 
     if hour_known:
         notes = _check_input_integrity(birth, zone)
@@ -307,14 +313,16 @@ def derive(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = 
 
     decade_record = None
     if as_of is not None and layers:
-        # as_of is read as a local time at the birthplace; annual and monthly by the same N45 rule.
-        a_year, a_month, a_day, _ = _pillars_at(as_of, zone)
+        # as_of is local time in t_zone (the birthplace by default, N46); annual and monthly by N45.
+        a_year, a_month, a_day, _ = _pillars_at(as_of, t_zone)
+        # decade boundaries are birthplace-local times: compare the same absolute moment there
+        as_of_birthplace = as_of.replace(tzinfo=ZoneInfo(t_zone)).astimezone(ZoneInfo(zone)).replace(tzinfo=None)
         transit = {"annual": a_year, "monthly": a_month, "daily": a_day}
         for layer in TRANSIT_LAYERS:
             if layer not in layers:
                 continue
             if layer == "decade":
-                gz, decade_record = _decade_at(yun_ecs, sex, as_of, zone)
+                gz, decade_record = _decade_at(yun_ecs, sex, as_of_birthplace, zone)
                 if gz is None:
                     notes.append(decade_record["note"])
                     continue
@@ -329,7 +337,8 @@ def derive(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = 
         corroboration=_corroborate(y, m, d, h),
         input_record={"birth": birth.isoformat(sep=" ") if hour_known else birth.date().isoformat(),
                       "hour_known": hour_known, "city": city, "zone": zone, "sex": sex,
-                      "as_of": as_of.isoformat(sep=" ") if as_of else None, "layers": list(layers),
+                      "as_of": as_of.isoformat(sep=" ") if as_of else None,
+                      "as_of_zone": t_zone if as_of is not None else None, "layers": list(layers),
                       "lunar_python_day_sect": LUNAR_SECT_DAY},
         decade_record=decade_record,
         notes=notes,

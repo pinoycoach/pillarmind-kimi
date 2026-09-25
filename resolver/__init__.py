@@ -13,7 +13,8 @@ __all__ = ["resolve_chart", "HardStop", "to_json"]
 
 
 def resolve_chart(birth: dt.datetime, city: str, sex: str, as_of: dt.datetime | None = None,
-                  layers: tuple = ("decade", "annual"), hour_known: bool = True) -> dict:
+                  layers: tuple = ("decade", "annual"), hour_known: bool = True,
+                  as_of_zone: str | None = None) -> dict:
     """The full pipeline: derive (lunar-python) → resolve. hour_known=False uses the date only."""
     return resolve(derive(birth, city, sex, as_of=as_of, layers=layers if as_of else (),
-                          hour_known=hour_known))
+                          hour_known=hour_known, as_of_zone=as_of_zone))
