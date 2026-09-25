@@ -80,6 +80,12 @@ Don't go beyond what was asked.
 RULE7_CIVIC = "Public figures: civic layer only. Structure, never a portrait. Nothing about private life, health or fate.\n"
 RULE7_LAB = ("Palaces are read as the figure's own terrain, never as statements about the relatives. No reading of "
              "any relative's own chart (Patch 13). The no-harm rule applies in full, to the figure and to the operator.\n")
+# Minors and children (N49), every mode: civic READING GROUND and lab rules alike.
+RULE_MINORS = ("Minors are never read, in any mode, even with consent. A subject's children are never discussed "
+               "through the subject's chart, including the hour palace. An adult child who is a public figure in "
+               "their own right may be studied on their own chart, as themselves, under the public-figure rules. "
+               "Reading a parent's and child's charts together is decided by the operator case by case and recorded "
+               "in the ledger; it never goes into civic output.\n")
 GROUND_TAIL = "The best output is the standard. Not a fortune cookie.\n"
 
 CIVIC_MODES = ("boundary", "interpret")
@@ -87,7 +93,8 @@ CIVIC_MODES = ("boundary", "interpret")
 
 def rules(mode):
     """Shared rules plus the READING GROUND, with ground rule 7 chosen by mode."""
-    return RULES_CORE + "\n" + GROUND_HEAD + (RULE7_LAB if mode == "lab" else RULE7_CIVIC) + GROUND_TAIL
+    return (RULES_CORE + "\n" + GROUND_HEAD + (RULE7_LAB if mode == "lab" else RULE7_CIVIC)
+            + RULE_MINORS + GROUND_TAIL)
 
 SCHEMA = """Return ONLY a JSON object with exactly these keys:
 {
@@ -127,8 +134,9 @@ for the period of the transit layers in the map.
 - For every ESCALATED item, give the reading under EACH candidate in turn, and say how the readings
   differ. Treat the candidates as equally open. Do not choose between them, rank them, or say which
   is more likely.
-- The map gives each natal pillar's palace (ch. 23 ruling: year 祖, month 父母, day 妻, hour 子).
-  Read palaces as the figure's own terrain only.
+- The map gives the year, month and day palaces (ch. 23 ruling: year 祖, month 父母, day 妻). The
+  hour palace (子, children) is withheld: a subject's children are never discussed through the
+  subject's chart. Read palaces as the figure's own terrain only.
 - Read what items mean through the TEN GODS relative to the Day Master (the catalog gives each
   stem's and hidden stem's ten god). All the rules below still apply.
 """ + rules("lab") + "\n" + SCHEMA,
@@ -361,6 +369,12 @@ def check(answer, items, mode="boundary"):
             a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
             rows.append(("palace / life-area word, civic mode (for operator read)", repr(m.group(0)), "WARN",
                          "…" + reading[a:b].replace("\n", " ") + "…"))
+    else:
+        # Lab mode reads palaces, but never the subject's children (N49). Never a failure.
+        for m in CHILDREN.finditer(scan):
+            a, b = max(0, m.start() - 40), min(len(reading), m.end() + 40)
+            rows.append(("children language, lab mode (N49, for operator read)", repr(m.group(0)), "WARN",
+                         "…" + reading[a:b].replace("\n", " ") + "…"))
     return rows
 
 
@@ -382,6 +396,8 @@ def _element_union_rows(scan, reading, items):
 
 
 # Secondary warning, civic modes: palace or life-area words (N43).
+CHILDREN = re.compile(
+    r"\b(child\w*|sons?|daughters?|offspring|heirs?|progeny|descendants?)\b|子女|兒子|女兒|子息", re.I)
 LIFE_AREA = re.compile(
     r"\b(career\w*|public\w*|legac(?:y|ies)|ancestor\w*|ancestral|parent\w*|spous\w*|marri\w*|"
     r"child\w*|famil(?:y|ies|ial))\b", re.I)
@@ -449,9 +465,42 @@ def blind_view(field_map):
     return view
 
 
+def withhold_children(field_map):
+    """N49: a subject's children are never discussed through the subject's chart, so the hour palace
+    (子, children) is not sent, in lab mode or anywhere else. The saved record keeps the full map."""
+    view = json.loads(json.dumps(field_map, ensure_ascii=False))
+    (view.get("palaces") or {}).pop("natal.hour", None)
+    if "natal.hour" in view.get("pillars", {}):
+        view["pillars"]["natal.hour"].pop("palace", None)
+    return view
+
+
 def mode_view(field_map, mode):
-    """What Kimi is shown: always blind (N48); palaces only in lab mode, the civic view otherwise."""
-    return blind_view(field_map if mode == "lab" else civic_view(field_map))
+    """What Kimi is shown: always blind (N48); palaces only in lab mode, minus the hour palace (N49);
+    the palace-free civic view otherwise."""
+    return blind_view(withhold_children(field_map) if mode == "lab" else civic_view(field_map))
+
+
+ADULT_AGE = 18
+
+
+def _age(birth: dt.datetime, when: dt.datetime) -> int:
+    return when.year - birth.year - ((when.month, when.day) < (birth.month, birth.day))
+
+
+def minor_refusal(kwargs, case, today=None):
+    """N49: minors are never read, in any mode, even with consent. Refuse a subject under 18 at the
+    as_of date, and a subject not declared deceased who is under 18 today."""
+    birth, as_of = kwargs["birth"], kwargs["as_of"]
+    today = today or dt.datetime.now()
+    deceased = (case.get("subject") or {}).get("status") == "deceased"
+    if _age(birth, as_of) < ADULT_AGE:
+        return (f"REFUSED: the subject was {_age(birth, as_of)} at the as_of date. Minors are never read, in any "
+                f"mode, even with consent (DECISIONS N49).")
+    if not deceased and _age(birth, today) < ADULT_AGE:
+        return (f"REFUSED: the subject is {_age(birth, today)} today. Minors are never read, in any mode, even "
+                f"with consent (DECISIONS N49).")
+    return None
 
 
 def recheck(path):
@@ -482,6 +531,8 @@ def main():
         return recheck(args.recheck)
     mode = args.mode
     kwargs, case = load_chart(args.chart)
+    if refusal := minor_refusal(kwargs, case):
+        sys.exit(refusal)
     if mode == "lab" and (refusal := lab_refusal(case)):
         sys.exit(refusal)
     if not os.environ.get("MOONSHOT_API_KEY"):
