@@ -72,8 +72,22 @@
         "token": "GAP",
         "label": "子"
       }
+    },
+    "formation": {
+      "status": "UNDETERMINED",
+      "proposed": {
+        "token": "UNDETERMINED",
+        "candidates": [
+          "正官格",
+          "正財格",
+          "ESCALATED: a combination (會) with the month branch may change the formation (ch. 10; N25 open case)",
+          "ESCALATED: two secondary stems visible (N25 open case)"
+        ]
+      },
+      "certified_by_operator": null
     }
   },
   "_approved": "Decade-layer entries approved by the operator 24 Sep 2026 (DECISIONS N33), on the basis of a hand check of each entry against the ruled rules (N22, E-21, 0.1c §5 Section 8, A2) made in the chat lane, not a separate bench pass: pillars.decade 癸丑; 害 丑午 ESCALATED E-23-scope; 五合 戊癸 ESCALATED E-21; 五合 丙辛 NOT_FIRING; 自刑 午午 FULL_FORCE.",
-  "_palaces": "Palaces per the operator's ch. 23 ruling (N42): year 祖, month 父母, day 妻, hour 子; hour unknown, so the children's palace is a named gap."
+  "_palaces": "Palaces per the operator's ch. 23 ruling (N42): year 祖, month 父母, day 妻, hour 子; hour unknown, so the children's palace is a named gap.",
+  "_formation": "Formation (N50): UNDETERMINED, hand-derived. Month 巳 holds 丙 (本氣), 庚, 戊; the visible natal stems other than the Day Master are Year 戊 and Month 丁, plus the unknown hour. Testing the twelve hour pillars 癸 allows (五鼠遁: 壬子 … 癸亥): most leave only 戊 visible, so 戊 governs, 正官 to 癸, 正官格; 丙辰 makes the 本氣 丙 visible, 正財格; 己未 completes 巳午未 with the month 巳, which escalates (ch. 10 會); 庚申 makes two secondary stems visible (戊, 庚), which escalates."
 }

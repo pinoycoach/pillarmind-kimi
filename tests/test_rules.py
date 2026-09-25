@@ -312,6 +312,23 @@ def test_ten_gods_are_traditional_for_all_ten_labels():
     assert r["pillars"]["natal.year"]["hidden_stems"][0] == {"stem": "癸", "ten_god": "正印"}
 
 
+@pytest.mark.parametrize("natal,transit,expected", [
+    (("甲子", "戊辰", "丙寅", "庚寅"), (), "雜氣 month"),                        # 辰 month: ch. 16 decides
+    (("丙子", "庚寅", "壬午", "戊申"), (), "two secondary stems visible"),       # 寅: 丙 and 戊 visible, 甲 not
+    (("甲子", "丙申", "乙卯", "丁亥"), (), "nothing visible"),                   # 申: none of 庚壬戊 visible
+    (("乙亥", "己卯", "丙午", "乙未"), (), "combination (會)"),                  # 亥卯未 with the month 卯
+    (("甲子", "丙寅", "甲午", "庚午"), (), "建祿/月劫"),                          # 寅's 甲 is the 甲 DM's 比肩
+    (("甲子", "丙申", "乙卯", "丁亥"), (("annual", "庚戌"), ("decade", "壬辰")), "nothing visible"),  # transits never count
+])
+def test_formation_escalates_every_uncovered_case_by_name(natal, transit, expected):
+    """N50: outside the settled core, the formation escalates by name, never guesses."""
+    f = resolve(_field(natal, transit))["formation"]
+    assert f["status"] == "ESCALATED" and f["proposed"]["token"] == "ESCALATED"
+    assert expected in f["proposed"]["pending"]
+    assert f["certified_by_operator"] is None
+    assert f["special_formation_gate"]["token"] == "ESCALATED"
+
+
 def test_same_pair_destruction_inside_a_six_harmony_escalates_as_e38():
     # 巳 Year + 申 Month lock in 巳申 六合; 申巳 is also a 破 pair.
     out = resolve(_field(("乙巳", "戊申", "甲午", "丙戌")))["destructions"]["破 申巳"]["outcome"]

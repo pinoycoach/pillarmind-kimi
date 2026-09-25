@@ -105,7 +105,13 @@
       "natal.month": "父母",
       "natal.day": "妻",
       "natal.hour": "子"
+    },
+    "formation": {
+      "status": "PROPOSED",
+      "proposed": "正印格",
+      "certified_by_operator": null
     }
   },
-  "_palaces": "Palaces per the operator's ch. 23 ruling (N42): year 祖, month 父母, day 妻, hour 子."
+  "_palaces": "Palaces per the operator's ch. 23 ruling (N42): year 祖, month 父母, day 妻, hour 子.",
+  "_formation": "Formation (N50): 正印格 as PROPOSED, hand-derived: month 卯 is one of 子午卯酉 (P-12/N25), so its single stem 乙 governs; 乙 to the 丙 Day Master is 正印. Ratified 3/3 in 0.1e Part One item 1. Not certified: the resolver never certifies."
 }

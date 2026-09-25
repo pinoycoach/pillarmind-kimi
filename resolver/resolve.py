@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from . import rulings
 from .derive import Field, ten_god
+from .formation import derive_formation
 from .rulings import CAPTURE_BLOCKED, Escalation
 from .tables import (CLASH, COMBINATION_RANK, DESTRUCTION, DIRECTIONAL, DIRECTIONAL_CARDINAL, HARM,
                      PUNISHMENT_PAIRS, PUNISHMENT_SETS, SELF_PUNISHMENT, SIX_HARMONY, STEM_COMBINATION,
@@ -707,6 +708,7 @@ def resolve(field: Field) -> dict:
         "input_integrity": {"corroboration": field.corroboration, "notes": field.notes},
         "pillars": {p.id: _pillar_json(p, dm, field.void["pair"]) for p in field.pillars},
         "palaces": _palaces(field),
+        "formation": derive_formation(field.pillars),
         "decade": field.decade_record,
         "day_master": dm,
         "void": {**field.void, "rule": "A1 / U11: note only; void branches participate at full weight",
