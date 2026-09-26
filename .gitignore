@@ -18,3 +18,6 @@ golden_local/
 experiments/out/
 # Lab-mode output (N43): never committed, never published directly
 experiments/out/lab/
+
+# Daily check output (private: your own chart's daily reports)
+experiments/daily/out/

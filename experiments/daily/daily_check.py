@@ -9,7 +9,7 @@ outcomes. A separate line says whether the 用神 has any support today that it 
 Pure resolver output plus a lookup. No network call, no language-model call. It reads the chart's
 birth data and the certified roles from a private fixture at run time (default
 golden_local/nap.json, git-ignored); nothing about any chart is written into this file, and
-nothing is written to disk by it.
+the only thing it writes is a copy of the report to experiments/daily/out/<date>.txt (git-ignored).
 
 The fixture needs: input {birth, city, sex} and operator_certification.certified_roles, each role
 {stem | stems, element, label}. The resolver never certifies; the roles are the operator's.
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import io
 import json
 import pathlib
 import sys
@@ -178,13 +179,13 @@ def load(path: pathlib.Path):
     return inp, roles
 
 
-def main() -> int:
+def report() -> dt.datetime:
+    """Print the report to stdout and return the as_of moment it was run for."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--chart", default=str(ROOT / "golden_local" / "nap.json"))
     ap.add_argument("--date", help="YYYY-MM-DD (default: today at the birthplace)")
     ap.add_argument("--time", default=None, help="HH:MM (default: now if --date is absent, else 12:00)")
     args = ap.parse_args()
-    sys.stdout.reconfigure(encoding="utf-8")
 
     inp, roles = load(pathlib.Path(args.chart))
     birth = dt.datetime.fromisoformat(inp["birth"])
@@ -246,6 +247,36 @@ def main() -> int:
         print("escalations: " + "; ".join(f"{k} ({v.get('pending')})" for k, v in m["escalations"].items()))
     print("\nFormation (resolver's proposal, never certified): " +
           f"{m['formation']['status']} {m['formation'].get('proposed')}")
+    return as_of
+
+
+class _Tee:
+    """Passes everything written to the terminal through unchanged and keeps a copy."""
+
+    def __init__(self, real):
+        self.real, self.copy = real, io.StringIO()
+
+    def write(self, s):
+        self.real.write(s)
+        return self.copy.write(s)
+
+    def flush(self):
+        self.real.flush()
+
+
+def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
+    tee = _Tee(sys.stdout)
+    sys.stdout = tee
+    try:
+        as_of = report()
+    finally:
+        sys.stdout = tee.real
+    # The same text, saved beside the script under out/ (git-ignored). One file per as_of date; a second
+    # run for the same date replaces it.
+    out = pathlib.Path(__file__).resolve().parent / "out"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{as_of:%Y-%m-%d}.txt").write_text(tee.copy.getvalue(), encoding="utf-8")
     return 0
 
 
