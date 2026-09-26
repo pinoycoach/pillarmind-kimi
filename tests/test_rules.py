@@ -347,3 +347,49 @@ def test_six_harmony_gate(pair, element, month, expected):
 def test_six_harmony_gate_escalates_where_the_two_wang_readings_split():
     esc = rulings.six_harmony_gate("巳申", "Water", "申")    # seasonal: Metal month; 三合: Water
     assert isinstance(esc, rulings.Escalation) and esc.pending == "U5-旺月"
+
+
+# ---- N51: an ungated 六合 lock is unconditional; only a 三合/三會 claiming the branch releases it ----
+
+CH7_XING = ("甲子", "丁卯", "甲戌", "丙寅")          # 子年卯月，日坐戌，時寅: 戌 combines 卯 (ch. 7)
+CH7_CHONG = ("甲子", "戊寅", "己丑", "辛巳")         # 子年，日坐丑，時巳: 丑 combines 子 (ch. 7)
+
+
+def test_ch7_ungated_six_harmony_resolves_the_punishment_and_is_never_released_by_the_gate():
+    """N51. 戌與卯合，可以解刑: 卯戌 in a 卯 month with the 火 gate unmet (NOT_MET), still LOCKED_FULL,
+    and 子卯刑 ELIMINATED. No weakness or unmet-transformation grade exists."""
+    r = resolve(_field(CH7_XING))
+    rec = r["branch_combinations"]["六合 卯戌 [natal.month+natal.day]"]
+    assert rec["gate"] == "NOT_MET" and rec["lock"] == "LOCKED_FULL" and rec["transformation"] == "NEUTRALIZED"
+    assert r["punishments"]["刑 子卯"]["outcome"] == "ELIMINATED"
+
+
+def test_ch7_temporal_sanhe_claims_the_shared_branch_and_the_punishment_returns():
+    """N51 / R19 temporal case. 子年卯月，日坐戌，而或時逢寅午，則戌與寅午會，而卯復刑子: 午 arrives
+    (annual), 寅午戌 claims 戌, the 卯戌 六合 fails pre-completion, and 子卯刑 acts."""
+    r = resolve(_field(CH7_XING, (("annual", "丙午"),)))
+    assert r["branch_combinations"]["三合 寅午戌 [natal.hour+annual+natal.day]"]["status"] == "FORMED"
+    fail = r["branch_combination_failures"]["六合 卯戌"]
+    assert fail["status"] == "FAILED_PRE_COMPLETION" and fail["leg_taken_by"].startswith("三合 寅午戌")
+    assert r["punishments"]["刑 子卯"]["outcome"] == "FULL_FORCE"
+
+
+def test_ch7_temporal_sanhe_claims_the_shared_branch_and_the_clash_returns():
+    """N51 / R19 temporal case. 子年午月，日坐丑，丑與子合，可以解沖，而時逢巳酉，則丑與巳酉會，而子復沖午.
+    午 arrives (annual): the ungated 子丑 六合 locks 子 and 子午 is ELIMINATED. Then 酉 arrives (monthly):
+    巳酉丑 claims 丑, 子丑 fails pre-completion, and 子午 acts."""
+    before = resolve(_field(CH7_CHONG, (("annual", "丙午"),)))
+    rec = before["branch_combinations"]["六合 子丑 [natal.year+natal.day]"]
+    assert rec["gate"] == "NOT_MET" and rec["lock"] == "LOCKED_FULL"
+    assert before["clashes"]["沖 子午"]["outcome"] == "ELIMINATED"
+    after = resolve(_field(CH7_CHONG, (("annual", "丙午"), ("monthly", "丁酉"))))
+    assert after["branch_combination_failures"]["六合 子丑"]["leg_taken_by"].startswith("三合 巳酉丑")
+    assert after["clashes"]["沖 子午"]["outcome"] == "FULL_FORCE"
+
+
+def test_a_six_harmony_arriving_as_a_transit_locks_just_as_unconditionally():
+    """N51: timing does not release the lock. Natal 子午 standing; 丑 arrives (annual) and combines 子."""
+    r = resolve(_field(("甲子", "丙午", "戊寅", "辛巳"), (("annual", "己丑"),)))
+    rec = r["branch_combinations"]["六合 子丑 [natal.year+annual]"]
+    assert rec["lock"] == "LOCKED_FULL" and rec["gate"] == "NOT_MET"
+    assert r["clashes"]["沖 子午"]["outcome"] == "ELIMINATED"
