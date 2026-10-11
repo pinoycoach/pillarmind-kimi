@@ -5,7 +5,6 @@ Expected values are hand-derived from the 藏干 table, never read off the code.
 reproduces those four pillars; it is not anyone's birth record.
 """
 import datetime as dt
-import hashlib
 import json
 import pathlib
 import re
@@ -42,10 +41,11 @@ CHARTS = {"fixture": _fixture, "digong": lambda: _golden("digong"),
 
 def test_fixture_chart_projects_to_exactly_the_hand_derived_map():
     pillars = {"year": "己酉", "month": "庚午", "day": "辛巳", "hour": "癸巳"}
-    canonical = '{"day":"辛巳","hour":"癸巳","month":"庚午","year":"己酉"}'
     expected = {
         "schema": "pillarmind.resolver/v1",
-        "chart_id": "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        # Pinned to the value yinde recomputes and compares against (its run-001
+        # fixture). Never derived here, or the two drift apart unseen.
+        "chart_id": "sha256:2ddc294e15456c2870f36e523435b54daa291f69dbd7a876cd5df47895fb6b69",
         "pillars": pillars,
         "hidden_stems": {"酉": ["辛"], "午": ["丁", "己"], "巳": ["丙", "庚", "戊"]},
     }

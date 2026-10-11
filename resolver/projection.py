@@ -12,7 +12,6 @@ four pillars share it. A hash of the birth record would be a brute-forceable sta
 from __future__ import annotations
 
 import hashlib
-import json
 
 from .tables import BRANCHES, NATAL_POSITIONS, STEMS
 
@@ -42,7 +41,7 @@ def project_v1(field_map: dict) -> dict:
             raise ValueError(f"hidden stems of {branch} empty or inconsistent: {stems}")
         pillars[position] = stem + branch
         hidden[branch] = stems
-    canonical = json.dumps(pillars, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    canonical = "".join(pillars[k] for k in NATAL_POSITIONS if k in pillars)
     return {
         "schema": SCHEMA,
         "chart_id": "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
